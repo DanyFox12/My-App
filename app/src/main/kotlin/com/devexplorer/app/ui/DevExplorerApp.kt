@@ -1,5 +1,6 @@
 package com.devexplorer.app.ui
 
+import androidx.compose.foundation.layout.consumeWindowInsets
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Icon
 import androidx.compose.material3.NavigationBar
@@ -72,7 +73,12 @@ fun DevExplorerApp(
     ) { innerPadding ->
         AppNavHost(
             navController = navController,
-            modifier = Modifier.padding(innerPadding),
+            // Pad for the bottom bar, then CONSUME those insets so each screen's
+            // inner Scaffold/TopAppBar doesn't double-apply the same system-bar
+            // padding. This is the correct nested-Scaffold inset pattern.
+            modifier = Modifier
+                .padding(innerPadding)
+                .consumeWindowInsets(innerPadding),
         )
     }
 }

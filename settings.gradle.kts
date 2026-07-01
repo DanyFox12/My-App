@@ -23,8 +23,11 @@ dependencyResolutionManagement {
 rootProject.name = "DevExplorer"
 
 // --- Module graph (see docs/ARCHITECTURE.md) ---
-// Milestone 1 ships the spine: the app + the two foundational core modules.
-// Feature/data modules are extracted in their respective milestones.
+// M1 shipped the spine (app + core:model + core:designsystem).
+// M2 adds the domain layer (capability/usecase) and the SAF data layer.
 include(":app")
 include(":core:model")
 include(":core:designsystem")
+include(":core:capability")
+include(":core:usecase")
+include(":data:storage")
