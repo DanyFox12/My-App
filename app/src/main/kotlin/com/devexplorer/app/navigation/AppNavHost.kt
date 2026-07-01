@@ -9,6 +9,7 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.toRoute
 import com.devexplorer.app.feature.apkviewer.ApkViewerScreen
+import com.devexplorer.app.feature.codeviewer.CodeViewerScreen
 import com.devexplorer.app.feature.explorer.ExplorerScreen
 import com.devexplorer.app.feature.packages.PackagesScreen
 import com.devexplorer.app.feature.settings.SettingsScreen
@@ -31,6 +32,10 @@ fun AppNavHost(
     val openApk: (StorageRef) -> Unit = { ref ->
         navController.navigate(ApkViewer(StorageRefArgs.encode(ref)))
     }
+    // Navigate to the code viewer for a text file.
+    val openText: (StorageRef, String) -> Unit = { ref, name ->
+        navController.navigate(CodeViewer(StorageRefArgs.encode(ref), name))
+    }
 
     NavHost(
         navController = navController,
@@ -39,7 +44,7 @@ fun AppNavHost(
         enterTransition = { fadeIn() },
         exitTransition = { fadeOut() },
     ) {
-        composable<Explorer> { ExplorerScreen(onOpenApk = openApk) }
+        composable<Explorer> { ExplorerScreen(onOpenApk = openApk, onOpenText = openText) }
         composable<Packages> {
             PackagesScreen(
                 onOpenPackage = { pkg -> openApk(StorageRef.installedPackage(pkg)) },
@@ -52,6 +57,15 @@ fun AppNavHost(
             val route = backStackEntry.toRoute<ApkViewer>()
             ApkViewerScreen(
                 sourceRef = StorageRefArgs.decode(route.refArg),
+                onBack = { navController.popBackStack() },
+            )
+        }
+
+        composable<CodeViewer> { backStackEntry ->
+            val route = backStackEntry.toRoute<CodeViewer>()
+            CodeViewerScreen(
+                sourceRef = StorageRefArgs.decode(route.refArg),
+                fileName = route.name,
                 onBack = { navController.popBackStack() },
             )
         }

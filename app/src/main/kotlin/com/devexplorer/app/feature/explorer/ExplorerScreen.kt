@@ -61,11 +61,17 @@ import com.devexplorer.core.model.StorageRef
 @Composable
 fun ExplorerScreen(
     onOpenApk: (StorageRef) -> Unit = {},
+    onOpenText: (StorageRef, String) -> Unit = { _, _ -> },
 ) {
     val appContext = LocalContext.current.applicationContext
     val viewModel: ExplorerViewModel = viewModel(factory = ExplorerViewModel.factory(appContext))
     val state by viewModel.uiState.collectAsStateWithLifecycle()
-    ExplorerContent(state = state, onEvent = viewModel::onEvent, onOpenApk = onOpenApk)
+    ExplorerContent(
+        state = state,
+        onEvent = viewModel::onEvent,
+        onOpenApk = onOpenApk,
+        onOpenText = onOpenText,
+    )
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -74,6 +80,7 @@ private fun ExplorerContent(
     state: ExplorerUiState,
     onEvent: (ExplorerEvent) -> Unit,
     onOpenApk: (StorageRef) -> Unit,
+    onOpenText: (StorageRef, String) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     // SAF folder picker. The OS shows the system document UI; the result is a
@@ -155,7 +162,12 @@ private fun ExplorerContent(
                         title = "Empty folder",
                         description = "There's nothing to show in this folder.",
                     )
-                    else -> FileList(entries = state.entries, onEvent = onEvent, onOpenApk = onOpenApk)
+                    else -> FileList(
+                        entries = state.entries,
+                        onEvent = onEvent,
+                        onOpenApk = onOpenApk,
+                        onOpenText = onOpenText,
+                    )
                 }
 
                 // A slim top progress bar for refreshes that keep existing content.
@@ -176,6 +188,7 @@ private fun FileList(
     entries: List<FileNode>,
     onEvent: (ExplorerEvent) -> Unit,
     onOpenApk: (StorageRef) -> Unit,
+    onOpenText: (StorageRef, String) -> Unit,
 ) {
     LazyColumn(modifier = Modifier.fillMaxSize()) {
         items(items = entries, key = { it.ref.raw }) { node ->
@@ -185,6 +198,7 @@ private fun FileList(
                     when {
                         node.isDirectory -> onEvent(ExplorerEvent.OpenFolder(node))
                         node.category == FileCategory.Apk -> onOpenApk(node.ref)
+                        node.category == FileCategory.Text -> onOpenText(node.ref, node.name)
                         else -> onEvent(ExplorerEvent.OpenFile(node))
                     }
                 },

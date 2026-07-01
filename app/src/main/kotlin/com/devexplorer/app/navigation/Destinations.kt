@@ -36,6 +36,10 @@ data object Settings
 @Serializable
 data class ApkViewer(val refArg: String)
 
+/** Detail destination: read-only text/code viewer. [refArg] is a StorageRefArgs token. */
+@Serializable
+data class CodeViewer(val refArg: String, val name: String)
+
 /**
  * The four top-level destinations shown in the bottom navigation bar. Each pairs
  * a type-safe route with its label and selected/unselected icons.
