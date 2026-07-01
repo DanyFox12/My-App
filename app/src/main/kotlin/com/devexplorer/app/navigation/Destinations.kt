@@ -1,13 +1,14 @@
 package com.devexplorer.app.navigation
 
-import androidx.compose.material.icons.filled.Apps as FilledApps
-import androidx.compose.material.icons.filled.Build as FilledBuild
-import androidx.compose.material.icons.filled.Folder as FilledFolder
-import androidx.compose.material.icons.filled.Settings as FilledSettings
-import androidx.compose.material.icons.outlined.Apps as OutlinedApps
-import androidx.compose.material.icons.outlined.Build as OutlinedBuild
-import androidx.compose.material.icons.outlined.Folder as OutlinedFolder
-import androidx.compose.material.icons.outlined.Settings as OutlinedSettings
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Apps
+import androidx.compose.material.icons.filled.Build
+import androidx.compose.material.icons.filled.Folder
+import androidx.compose.material.icons.filled.Settings
+import androidx.compose.material.icons.outlined.Apps
+import androidx.compose.material.icons.outlined.Build
+import androidx.compose.material.icons.outlined.Folder
+import androidx.compose.material.icons.outlined.Settings
 import androidx.compose.ui.graphics.vector.ImageVector
 import com.devexplorer.app.R
 import kotlinx.serialization.Serializable
@@ -57,25 +58,25 @@ enum class TopLevelDestination(
     EXPLORER(
         route = Explorer,
         labelRes = R.string.nav_explorer,
-        selectedIcon = FilledFolder,
-        unselectedIcon = OutlinedFolder,
+        selectedIcon = Icons.Filled.Folder,
+        unselectedIcon = Icons.Outlined.Folder,
     ),
     PACKAGES(
         route = Packages,
         labelRes = R.string.nav_packages,
-        selectedIcon = FilledApps,
-        unselectedIcon = OutlinedApps,
+        selectedIcon = Icons.Filled.Apps,
+        unselectedIcon = Icons.Outlined.Apps,
     ),
     WORKSPACE(
         route = Workspace,
         labelRes = R.string.nav_workspace,
-        selectedIcon = FilledBuild,
-        unselectedIcon = OutlinedBuild,
+        selectedIcon = Icons.Filled.Build,
+        unselectedIcon = Icons.Outlined.Build,
     ),
     SETTINGS(
         route = Settings,
         labelRes = R.string.nav_settings,
-        selectedIcon = FilledSettings,
-        unselectedIcon = OutlinedSettings,
+        selectedIcon = Icons.Filled.Settings,
+        unselectedIcon = Icons.Outlined.Settings,
     ),
 }
