@@ -38,6 +38,7 @@ fun FileRow(
     node: FileNode,
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
+    trailingContent: (@Composable () -> Unit)? = null,
 ) {
     Row(
         modifier = modifier
@@ -73,8 +74,9 @@ fun FileRow(
                 )
             }
         }
-        if (node.isDirectory) {
-            Icon(
+        when {
+            trailingContent != null -> trailingContent()
+            node.isDirectory -> Icon(
                 imageVector = Icons.Filled.ChevronRight,
                 contentDescription = null,
                 tint = MaterialTheme.colorScheme.onSurfaceVariant,

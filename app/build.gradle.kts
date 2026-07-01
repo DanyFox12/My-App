@@ -60,6 +60,7 @@ dependencies {
     implementation(project(":core:capability"))
     implementation(project(":core:usecase"))
     implementation(project(":data:storage"))
+    implementation(project(":data:workspace"))
 
     implementation(libs.androidx.core.ktx)
     implementation(libs.bundles.lifecycle)

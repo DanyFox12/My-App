@@ -20,6 +20,7 @@ import androidx.compose.material.icons.filled.CreateNewFolder
 import androidx.compose.material.icons.outlined.ErrorOutline
 import androidx.compose.material.icons.outlined.FolderOff
 import androidx.compose.material.icons.outlined.FolderOpen
+import androidx.compose.material.icons.outlined.MoveToInbox
 import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -28,10 +29,14 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
@@ -78,8 +83,20 @@ private fun ExplorerContent(
     // Route the system back gesture/button to "up" while we're below the root.
     BackHandler(enabled = state.canNavigateUp) { onEvent(ExplorerEvent.NavigateUp) }
 
+    // Show one-shot messages (copy results) as a snackbar, then consume them so
+    // they don't re-appear on recomposition/rotation.
+    val snackbarHostState = remember { SnackbarHostState() }
+    LaunchedEffect(state.message) {
+        val msg = state.message
+        if (msg != null) {
+            snackbarHostState.showSnackbar(msg)
+            onEvent(ExplorerEvent.ConsumeMessage)
+        }
+    }
+
     Scaffold(
         modifier = modifier,
+        snackbarHost = { SnackbarHost(snackbarHostState) },
         topBar = {
             TopAppBar(
                 title = {
@@ -163,6 +180,20 @@ private fun FileList(
                         if (node.isDirectory) ExplorerEvent.OpenFolder(node)
                         else ExplorerEvent.OpenFile(node),
                     )
+                },
+                // Files (not folders) get a "copy into Workspace" action — the
+                // read System zone's bridge into the writable sandbox.
+                trailingContent = if (!node.isDirectory) {
+                    {
+                        IconButton(onClick = { onEvent(ExplorerEvent.CopyToWorkspace(node)) }) {
+                            Icon(
+                                imageVector = Icons.Outlined.MoveToInbox,
+                                contentDescription = "Copy to Workspace",
+                            )
+                        }
+                    }
+                } else {
+                    null
                 },
             )
         }

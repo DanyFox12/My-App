@@ -31,3 +31,5 @@ include(":core:designsystem")
 include(":core:capability")
 include(":core:usecase")
 include(":data:storage")
+// M3 adds the sandbox — the app's only writable surface.
+include(":data:workspace")

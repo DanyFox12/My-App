@@ -7,9 +7,11 @@ import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
 import com.devexplorer.core.model.FileNode
+import com.devexplorer.core.usecase.CopyIntoWorkspaceUseCase
 import com.devexplorer.core.usecase.ListDirectoryUseCase
 import com.devexplorer.core.usecase.OpenDocumentTreeUseCase
 import com.devexplorer.data.storage.SafStorageRepository
+import com.devexplorer.data.workspace.WorkspaceModule
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -29,6 +31,7 @@ import kotlinx.coroutines.launch
 class ExplorerViewModel(
     private val openDocumentTree: OpenDocumentTreeUseCase,
     private val listDirectory: ListDirectoryUseCase,
+    private val copyIntoWorkspace: CopyIntoWorkspaceUseCase,
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(ExplorerUiState())
@@ -39,10 +42,25 @@ class ExplorerViewModel(
             is ExplorerEvent.TreePicked -> onTreePicked(event.treeUri)
             is ExplorerEvent.OpenFolder -> onOpenFolder(event.node)
             is ExplorerEvent.OpenFile -> onOpenFile(event.node)
+            is ExplorerEvent.CopyToWorkspace -> onCopyToWorkspace(event.node)
             is ExplorerEvent.NavigateToCrumb -> onNavigateToCrumb(event.index)
             ExplorerEvent.NavigateUp -> onNavigateUp()
             ExplorerEvent.Retry -> loadCurrent()
             ExplorerEvent.DismissError -> _uiState.update { it.copy(errorMessage = null) }
+            ExplorerEvent.ConsumeMessage -> _uiState.update { it.copy(message = null) }
+        }
+    }
+
+    private fun onCopyToWorkspace(node: FileNode) {
+        if (node.isDirectory) return
+        viewModelScope.launch {
+            copyIntoWorkspace(node)
+                .onSuccess { item ->
+                    _uiState.update { it.copy(message = "Copied \"${item.name}\" to Workspace") }
+                }
+                .onFailure {
+                    _uiState.update { it.copy(message = "Couldn't copy to Workspace") }
+                }
         }
     }
 
@@ -115,10 +133,15 @@ class ExplorerViewModel(
          */
         fun factory(appContext: Context): ViewModelProvider.Factory = viewModelFactory {
             initializer {
-                val repo = SafStorageRepository(appContext)
+                val storage = SafStorageRepository(appContext)
+                val workspace = WorkspaceModule.repository(appContext)
+                // The write token is minted here (only :data:workspace can) and
+                // handed to the copy use-case; read paths never receive one.
+                val writeToken = WorkspaceModule.writeCapability()
                 ExplorerViewModel(
-                    openDocumentTree = OpenDocumentTreeUseCase(repo),
-                    listDirectory = ListDirectoryUseCase(repo),
+                    openDocumentTree = OpenDocumentTreeUseCase(storage),
+                    listDirectory = ListDirectoryUseCase(storage),
+                    copyIntoWorkspace = CopyIntoWorkspaceUseCase(storage, workspace, writeToken),
                 )
             }
         }

@@ -21,6 +21,8 @@ data class ExplorerUiState(
     val breadcrumb: List<Crumb> = emptyList(),
     val entries: List<FileNode> = emptyList(),
     val errorMessage: String? = null,
+    /** Transient one-shot text for a snackbar (e.g. "Copied to Workspace"). */
+    val message: String? = null,
 ) {
     /** The folder currently being shown, or null before a root is picked. */
     val current: Crumb? get() = breadcrumb.lastOrNull()
@@ -38,8 +40,10 @@ sealed interface ExplorerEvent {
     data class TreePicked(val treeUri: String) : ExplorerEvent
     data class OpenFolder(val node: FileNode) : ExplorerEvent
     data class OpenFile(val node: FileNode) : ExplorerEvent
+    data class CopyToWorkspace(val node: FileNode) : ExplorerEvent
     data class NavigateToCrumb(val index: Int) : ExplorerEvent
     data object NavigateUp : ExplorerEvent
     data object Retry : ExplorerEvent
     data object DismissError : ExplorerEvent
+    data object ConsumeMessage : ExplorerEvent
 }

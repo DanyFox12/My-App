@@ -14,6 +14,8 @@ import com.devexplorer.core.model.StorageRef
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import java.io.IOException
+import java.io.InputStream
 
 /**
  * Storage Access Framework implementation of [StorageRepository].
@@ -107,6 +109,13 @@ class SafStorageRepository(
         resolver.query(docUri, arrayOf(Document.COLUMN_DISPLAY_NAME), null, null, null)?.use { c ->
             if (c.moveToFirst()) c.getString(0) else null
         } ?: DEFAULT_NAME
+    }
+
+    override suspend fun openInputStream(ref: StorageRef): InputStream = withContext(ioDispatcher) {
+        val loc = SafLocation.decode(ref)
+        val docUri = DocumentsContract.buildDocumentUriUsingTree(Uri.parse(loc.treeUri), loc.documentId)
+        // Read-only stream from the documents provider. We never open for write.
+        resolver.openInputStream(docUri) ?: throw IOException("Cannot open $docUri")
     }
 
     private fun Cursor.longOrNull(index: Int): Long? = if (isNull(index)) null else getLong(index)

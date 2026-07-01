@@ -2,6 +2,7 @@ package com.devexplorer.core.capability
 
 import com.devexplorer.core.model.FileNode
 import com.devexplorer.core.model.StorageRef
+import java.io.InputStream
 
 /**
  * Read-only access to browsable storage (the System zone).
@@ -33,4 +34,11 @@ interface StorageRepository {
 
     /** Human-readable display name for a location (for breadcrumbs/titles). */
     suspend fun displayName(ref: StorageRef): String
+
+    /**
+     * Open a READ-ONLY stream to a document. The caller owns the stream and must
+     * close it. Used to copy a source file into the Workspace sandbox — reading
+     * only; the source is never modified.
+     */
+    suspend fun openInputStream(ref: StorageRef): InputStream
 }
