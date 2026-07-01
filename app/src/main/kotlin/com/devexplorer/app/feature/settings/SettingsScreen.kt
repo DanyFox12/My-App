@@ -26,6 +26,7 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.devexplorer.app.R
 import com.devexplorer.app.settings.SettingsStore
+import com.devexplorer.app.settings.ThemeMode
 import com.devexplorer.app.ui.ZoneScreenScaffold
 
 /**
@@ -45,6 +46,11 @@ fun SettingsScreen() {
     ) { modifier ->
         Column(modifier = modifier.verticalScroll(rememberScrollState())) {
             SectionHeader(stringResource(R.string.settings_theme))
+            // Theme mode: Follow system / Light / Dark
+            ThemeModeOption(ThemeMode.System, R.string.settings_theme_system, settings.themeMode) { store.setThemeMode(it) }
+            ThemeModeOption(ThemeMode.Light, R.string.settings_theme_light, settings.themeMode) { store.setThemeMode(it) }
+            ThemeModeOption(ThemeMode.Dark, R.string.settings_theme_dark, settings.themeMode) { store.setThemeMode(it) }
+
             val dynamicSupported = Build.VERSION.SDK_INT >= Build.VERSION_CODES.S
             SwitchRow(
                 title = stringResource(R.string.settings_dynamic_color),
@@ -74,6 +80,30 @@ fun SettingsScreen() {
                 onCheckedChange = { store.setNetworkEnabled(it) },
             )
         }
+    }
+}
+
+@Composable
+private fun ThemeModeOption(
+    mode: ThemeMode,
+    labelRes: Int,
+    current: ThemeMode,
+    onSelect: (ThemeMode) -> Unit,
+) {
+    val selected = current == mode
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .selectable(selected = selected, onClick = { if (!selected) onSelect(mode) })
+            .padding(horizontal = 16.dp, vertical = 12.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        RadioButton(selected = selected, onClick = null)
+        Text(
+            text = stringResource(labelRes),
+            style = MaterialTheme.typography.bodyLarge,
+            modifier = Modifier.padding(start = 12.dp),
+        )
     }
 }
 

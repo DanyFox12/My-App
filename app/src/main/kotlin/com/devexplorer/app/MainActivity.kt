@@ -5,11 +5,13 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.devexplorer.app.settings.LocaleContext
 import com.devexplorer.app.settings.SettingsStore
+import com.devexplorer.app.settings.ThemeMode
 import com.devexplorer.app.ui.DevExplorerApp
 import com.devexplorer.core.designsystem.theme.DevExplorerTheme
 
@@ -33,7 +35,12 @@ class MainActivity : ComponentActivity() {
         setContent {
             val store = remember { SettingsStore.get(this) }
             val settings by store.settings.collectAsStateWithLifecycle()
-            DevExplorerTheme(dynamicColor = settings.dynamicColor) {
+            val darkTheme = when (settings.themeMode) {
+                ThemeMode.System -> isSystemInDarkTheme()
+                ThemeMode.Light -> false
+                ThemeMode.Dark -> true
+            }
+            DevExplorerTheme(darkTheme = darkTheme, dynamicColor = settings.dynamicColor) {
                 DevExplorerApp()
             }
         }

@@ -28,6 +28,10 @@
     <string name="settings_empty_title">Settings</string>
     <string name="settings_empty_desc">Theme, language, and optional features will live here.</string>
     <string name="settings_theme">Appearance</string>
+    <string name="settings_theme_mode">Theme</string>
+    <string name="settings_theme_system">Follow system</string>
+    <string name="settings_theme_light">Light</string>
+    <string name="settings_theme_dark">Dark</string>
     <string name="settings_dynamic_color">Dynamic color</string>
     <string name="settings_dynamic_color_desc">Match the app colors to your wallpaper (Android 12+).</string>
     <string name="settings_dynamic_color_unavailable">Available on Android 12 and newer.</string>

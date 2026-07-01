@@ -6,9 +6,13 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 
+/** How the app resolves light vs dark. */
+enum class ThemeMode { System, Light, Dark }
+
 /** User-tunable app settings. [language] is a BCP-47 tag, or "" for system default. */
 data class AppSettings(
     val dynamicColor: Boolean = true,
+    val themeMode: ThemeMode = ThemeMode.System,
     val language: String = "",
     val networkEnabled: Boolean = false,
 )
@@ -28,6 +32,7 @@ class SettingsStore private constructor(context: Context) {
     val settings: StateFlow<AppSettings> = _settings.asStateFlow()
 
     fun setDynamicColor(enabled: Boolean) = update { putBoolean(KEY_DYNAMIC, enabled) }
+    fun setThemeMode(mode: ThemeMode) = update { putString(KEY_THEME, mode.name) }
     fun setLanguage(tag: String) = update { putString(KEY_LANGUAGE, tag) }
     fun setNetworkEnabled(enabled: Boolean) = update { putBoolean(KEY_NETWORK, enabled) }
 
@@ -40,6 +45,8 @@ class SettingsStore private constructor(context: Context) {
 
     private fun read() = AppSettings(
         dynamicColor = prefs.getBoolean(KEY_DYNAMIC, true),
+        themeMode = runCatching { ThemeMode.valueOf(prefs.getString(KEY_THEME, null) ?: "") }
+            .getOrDefault(ThemeMode.System),
         language = prefs.getString(KEY_LANGUAGE, "").orEmpty(),
         networkEnabled = prefs.getBoolean(KEY_NETWORK, false),
     )
@@ -47,6 +54,7 @@ class SettingsStore private constructor(context: Context) {
     companion object {
         private const val PREFS = "devexplorer_settings"
         private const val KEY_DYNAMIC = "dynamic_color"
+        private const val KEY_THEME = "theme_mode"
         private const val KEY_LANGUAGE = "language"
         private const val KEY_NETWORK = "network_enabled"
 

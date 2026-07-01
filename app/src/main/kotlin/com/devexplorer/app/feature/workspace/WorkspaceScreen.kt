@@ -1,5 +1,7 @@
 package com.devexplorer.app.feature.workspace
 
+import android.content.Context
+import android.content.Intent
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
@@ -12,6 +14,7 @@ import androidx.compose.material.icons.outlined.Delete
 import androidx.compose.material.icons.outlined.DriveFileRenameOutline
 import androidx.compose.material.icons.outlined.ErrorOutline
 import androidx.compose.material.icons.outlined.Inventory2
+import androidx.compose.material.icons.outlined.Share
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DropdownMenu
@@ -40,6 +43,7 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.compose.LifecycleEventEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.core.content.FileProvider
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.devexplorer.app.R
 import com.devexplorer.core.designsystem.component.EmptyState
@@ -48,6 +52,7 @@ import com.devexplorer.core.designsystem.component.ZoneBanner
 import com.devexplorer.core.model.FileNode
 import com.devexplorer.core.model.WorkspaceItem
 import com.devexplorer.core.model.Zone
+import java.io.File
 
 @Composable
 fun WorkspaceScreen() {
@@ -159,11 +164,20 @@ private fun ItemMenu(
     onEvent: (WorkspaceEvent) -> Unit,
 ) {
     var expanded by remember { mutableStateOf(false) }
+    val context = LocalContext.current
     Box {
         IconButton(onClick = { expanded = true }) {
             Icon(Icons.Filled.MoreVert, contentDescription = "More options")
         }
         DropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
+            DropdownMenuItem(
+                text = { Text("Share") },
+                leadingIcon = { Icon(Icons.Outlined.Share, contentDescription = null) },
+                onClick = {
+                    expanded = false
+                    shareWorkspaceItem(context, item)
+                },
+            )
             DropdownMenuItem(
                 text = { Text("Rename") },
                 leadingIcon = { Icon(Icons.Outlined.DriveFileRenameOutline, contentDescription = null) },
@@ -182,6 +196,26 @@ private fun ItemMenu(
             )
         }
     }
+}
+
+/**
+ * Shares a Workspace file with other apps via FileProvider: builds a content://
+ * Uri for the sandbox file and hands it to ACTION_SEND with a temporary read
+ * grant. We never share a raw file path, and only the workspace dir is exposed
+ * (see res/xml/file_paths.xml).
+ */
+private fun shareWorkspaceItem(context: Context, item: WorkspaceItem) {
+    // filesDir/workspace/<id> — mirrors WorkspaceFileRepository's layout.
+    val file = File(File(context.filesDir, "workspace"), item.id)
+    if (!file.exists()) return
+
+    val uri = FileProvider.getUriForFile(context, "${context.packageName}.fileprovider", file)
+    val intent = Intent(Intent.ACTION_SEND).apply {
+        type = context.contentResolver.getType(uri) ?: "application/octet-stream"
+        putExtra(Intent.EXTRA_STREAM, uri)
+        addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+    }
+    context.startActivity(Intent.createChooser(intent, "Share \"${item.name}\""))
 }
 
 @Composable
