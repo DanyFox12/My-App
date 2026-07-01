@@ -12,6 +12,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.outlined.Delete
 import androidx.compose.material.icons.outlined.DriveFileRenameOutline
+import androidx.compose.material.icons.outlined.Edit
 import androidx.compose.material.icons.outlined.ErrorOutline
 import androidx.compose.material.icons.outlined.Inventory2
 import androidx.compose.material.icons.outlined.Share
@@ -55,7 +56,7 @@ import com.devexplorer.core.model.Zone
 import java.io.File
 
 @Composable
-fun WorkspaceScreen() {
+fun WorkspaceScreen(onOpenEditor: (WorkspaceItem) -> Unit = {}) {
     val appContext = LocalContext.current.applicationContext
     val viewModel: WorkspaceViewModel = viewModel(factory = WorkspaceViewModel.factory(appContext))
     val state by viewModel.uiState.collectAsStateWithLifecycle()
@@ -66,7 +67,7 @@ fun WorkspaceScreen() {
         viewModel.onEvent(WorkspaceEvent.Refresh)
     }
 
-    WorkspaceContent(state = state, onEvent = viewModel::onEvent)
+    WorkspaceContent(state = state, onEvent = viewModel::onEvent, onOpenEditor = onOpenEditor)
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -74,6 +75,7 @@ fun WorkspaceScreen() {
 private fun WorkspaceContent(
     state: WorkspaceUiState,
     onEvent: (WorkspaceEvent) -> Unit,
+    onOpenEditor: (WorkspaceItem) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val snackbarHostState = remember { SnackbarHostState() }
@@ -113,7 +115,11 @@ private fun WorkspaceContent(
                         title = stringResource(R.string.workspace_empty_title),
                         description = stringResource(R.string.workspace_empty_desc),
                     )
-                    else -> WorkspaceList(items = state.items, onEvent = onEvent)
+                    else -> WorkspaceList(
+                        items = state.items,
+                        onEvent = onEvent,
+                        onOpenEditor = onOpenEditor,
+                    )
                 }
             }
         }
@@ -140,6 +146,7 @@ private fun WorkspaceContent(
 private fun WorkspaceList(
     items: List<WorkspaceItem>,
     onEvent: (WorkspaceEvent) -> Unit,
+    onOpenEditor: (WorkspaceItem) -> Unit,
 ) {
     LazyColumn(modifier = Modifier.fillMaxSize()) {
         items(items = items, key = { it.id }) { item ->
@@ -151,8 +158,11 @@ private fun WorkspaceList(
                     sizeBytes = item.sizeBytes,
                     lastModified = item.addedAt,
                 ),
-                onClick = { /* opening a workspace item arrives in later milestones */ },
-                trailingContent = { ItemMenu(item = item, onEvent = onEvent) },
+                // Tapping a sandbox item opens it in the (writable) text editor.
+                onClick = { onOpenEditor(item) },
+                trailingContent = {
+                    ItemMenu(item = item, onEvent = onEvent, onOpenEditor = onOpenEditor)
+                },
             )
         }
     }
@@ -162,6 +172,7 @@ private fun WorkspaceList(
 private fun ItemMenu(
     item: WorkspaceItem,
     onEvent: (WorkspaceEvent) -> Unit,
+    onOpenEditor: (WorkspaceItem) -> Unit,
 ) {
     var expanded by remember { mutableStateOf(false) }
     val context = LocalContext.current
@@ -170,6 +181,14 @@ private fun ItemMenu(
             Icon(Icons.Filled.MoreVert, contentDescription = "More options")
         }
         DropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
+            DropdownMenuItem(
+                text = { Text("Edit") },
+                leadingIcon = { Icon(Icons.Outlined.Edit, contentDescription = null) },
+                onClick = {
+                    expanded = false
+                    onOpenEditor(item)
+                },
+            )
             DropdownMenuItem(
                 text = { Text("Share") },
                 leadingIcon = { Icon(Icons.Outlined.Share, contentDescription = null) },

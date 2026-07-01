@@ -15,7 +15,8 @@ unless you turn it on.
 - **APK Viewer** — open any APK (or installed app) and inspect it read-only:
   overview, permissions, **signing certificates & fingerprints**, resource
   breakdown, **DEX method/class counts** (with a 64K-limit warning), and the raw
-  ZIP contents. Share a plain-text report of the analysis straight from the toolbar.
+  ZIP contents — from which you can **extract any entry into the Workspace**.
+  Share a plain-text report of the analysis straight from the toolbar.
 - **Packages** — list installed apps via `PackageManager`; tap one to analyze it
   in the same viewer.
 - **Compare APKs** — pick two installed apps and diff them side-by-side:
@@ -23,7 +24,8 @@ unless you turn it on.
   removed permissions, and whether they share a signing certificate. Shareable as
   a plain-text report.
 - **Workspace** — the app's *only* writable surface: an app-private sandbox you
-  copy files into, with rename/delete.
+  copy files into, extract APK entries into, and **edit in place** (a text
+  editor that saves back to the sandbox), with rename/delete.
 - **Code Viewer** — syntax-highlighted, read-only text/code viewing, with
   in-file search (match count + next/previous navigation).
 - **Settings** — Material You dynamic color, per-app language (English/العربية),

@@ -18,6 +18,7 @@ import com.devexplorer.app.feature.packages.PackagesScreen
 import com.devexplorer.app.feature.permissions.PermissionSearchScreen
 import com.devexplorer.app.feature.settings.SettingsScreen
 import com.devexplorer.app.feature.workspace.WorkspaceScreen
+import com.devexplorer.app.feature.workspace.editor.WorkspaceEditorScreen
 import com.devexplorer.core.model.StorageRef
 
 /**
@@ -59,7 +60,11 @@ fun AppNavHost(
                 onOpenCompare = { navController.navigate(ApkCompare) },
             )
         }
-        composable<Workspace> { WorkspaceScreen() }
+        composable<Workspace> {
+            WorkspaceScreen(
+                onOpenEditor = { item -> navController.navigate(WorkspaceEditor(item.id, item.name)) },
+            )
+        }
         composable<Settings> { SettingsScreen() }
 
         composable<ApkViewer> { backStackEntry ->
@@ -85,6 +90,15 @@ fun AppNavHost(
 
         composable<ApkCompare> {
             ApkCompareScreen(onBack = { navController.popBackStack() })
+        }
+
+        composable<WorkspaceEditor> { backStackEntry ->
+            val route = backStackEntry.toRoute<WorkspaceEditor>()
+            WorkspaceEditorScreen(
+                id = route.id,
+                name = route.name,
+                onBack = { navController.popBackStack() },
+            )
         }
     }
 }

@@ -49,6 +49,10 @@ data object PermissionSearch
 @Serializable
 data object ApkCompare
 
+/** Detail destination: edit a Workspace sandbox file in place. */
+@Serializable
+data class WorkspaceEditor(val id: String, val name: String)
+
 /**
  * The four top-level destinations shown in the bottom navigation bar. Each pairs
  * a type-safe route with its label and selected/unselected icons.

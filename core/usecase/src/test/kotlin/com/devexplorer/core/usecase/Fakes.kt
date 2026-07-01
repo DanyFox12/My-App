@@ -27,7 +27,24 @@ class FakeStorageRepository(
 class FakeWorkspaceRepository : WorkspaceRepository {
     val imported = mutableListOf<Pair<String, ByteArray>>()
 
+    /** id -> current contents, so readText/writeText round-trip in tests. */
+    val contents = linkedMapOf<String, ByteArray>()
+
     override suspend fun list(): List<WorkspaceItem> = emptyList()
+
+    override suspend fun readText(item: WorkspaceItem): String =
+        contents[item.id]?.toString(Charsets.UTF_8)
+            ?: throw java.io.IOException("Item no longer exists")
+
+    override suspend fun writeText(
+        item: WorkspaceItem,
+        text: String,
+        capability: WriteCapability,
+    ): WorkspaceItem {
+        val bytes = text.toByteArray()
+        contents[item.id] = bytes
+        return item.copy(sizeBytes = bytes.size.toLong())
+    }
 
     override suspend fun importStream(
         displayName: String,
@@ -36,6 +53,7 @@ class FakeWorkspaceRepository : WorkspaceRepository {
     ): WorkspaceItem {
         val bytes = input.readBytes()
         imported += displayName to bytes
+        contents[displayName] = bytes
         return WorkspaceItem(
             id = displayName,
             name = displayName,
@@ -49,6 +67,20 @@ class FakeWorkspaceRepository : WorkspaceRepository {
         throw NotImplementedError()
 
     override suspend fun delete(item: WorkspaceItem, capability: WriteCapability) = Unit
+}
+
+/** Test double for reading installed-package APKs; serves preset bytes by name. */
+class FakePackagesRepository(
+    private val apks: Map<String, ByteArray> = emptyMap(),
+) : com.devexplorer.core.capability.PackagesRepository {
+    override suspend fun listInstalled(includeSystem: Boolean) =
+        emptyList<com.devexplorer.core.model.InstalledPackage>()
+
+    override suspend fun permissionUsage(includeSystem: Boolean) =
+        emptyList<com.devexplorer.core.model.PermissionUsage>()
+
+    override suspend fun openApk(packageName: String): InputStream =
+        ByteArrayInputStream(apks[packageName] ?: ByteArray(0))
 }
 
 /** A stand-in write token for tests. */

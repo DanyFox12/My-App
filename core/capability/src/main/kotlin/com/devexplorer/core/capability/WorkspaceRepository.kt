@@ -19,6 +19,20 @@ interface WorkspaceRepository {
     /** List the sandbox contents (newest first). Read-only; no token required. */
     suspend fun list(): List<WorkspaceItem>
 
+    /** Read a sandbox item's contents as UTF-8 text. Read-only; no token required. */
+    suspend fun readText(item: WorkspaceItem): String
+
+    /**
+     * Overwrite an existing sandbox item's contents with [text] (UTF-8). This is
+     * the only in-place edit path, and — like every mutator here — it demands a
+     * [WriteCapability], so nothing outside :data:workspace can reach it.
+     */
+    suspend fun writeText(
+        item: WorkspaceItem,
+        text: String,
+        capability: WriteCapability,
+    ): WorkspaceItem
+
     /**
      * Copy an incoming read-only [input] stream into the sandbox under a safe,
      * unique name derived from [displayName]. Returns the created item.

@@ -46,6 +46,25 @@ class WorkspaceFileRepository(
             ?: emptyList()
     }
 
+    override suspend fun readText(item: WorkspaceItem): String = withContext(io) {
+        val file = File(workspaceDir, item.id)
+        requireInside(file)
+        if (!file.exists()) throw IOException("Item no longer exists")
+        file.readText(Charsets.UTF_8)
+    }
+
+    override suspend fun writeText(
+        item: WorkspaceItem,
+        text: String,
+        capability: WriteCapability,
+    ): WorkspaceItem = withContext(io) {
+        val file = File(workspaceDir, item.id)
+        requireInside(file)
+        if (!file.exists()) throw IOException("Item no longer exists")
+        file.writeText(text, Charsets.UTF_8)
+        file.toItem()
+    }
+
     override suspend fun importStream(
         displayName: String,
         input: InputStream,

@@ -58,3 +58,27 @@ class DeleteWorkspaceItemUseCase(
         workspace.delete(item, capability)
     }
 }
+
+/** Reads a sandbox item's text for the editor. Read-only; no token required. */
+class ReadWorkspaceTextUseCase(
+    private val workspace: WorkspaceRepository,
+) {
+    suspend operator fun invoke(item: WorkspaceItem): Result<String> = runCatching {
+        workspace.readText(item)
+    }
+}
+
+/**
+ * Saves edited text back to a sandbox item — the app's only in-place *edit*.
+ * Reads happen anywhere; this write is gated by the injected [WriteCapability],
+ * so only :data:workspace-blessed code can construct it.
+ */
+class SaveWorkspaceTextUseCase(
+    private val workspace: WorkspaceRepository,
+    private val capability: WriteCapability,
+) {
+    suspend operator fun invoke(item: WorkspaceItem, text: String): Result<WorkspaceItem> =
+        runCatching {
+            workspace.writeText(item, text, capability)
+        }
+}

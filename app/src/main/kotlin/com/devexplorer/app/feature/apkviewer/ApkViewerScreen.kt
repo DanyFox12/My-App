@@ -23,6 +23,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.outlined.ErrorOutline
 import androidx.compose.material.icons.outlined.Key
+import androidx.compose.material.icons.outlined.SaveAlt
 import androidx.compose.material.icons.outlined.Search
 import androidx.compose.material.icons.outlined.Share
 import androidx.compose.material.icons.outlined.VerifiedUser
@@ -36,12 +37,15 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.ScrollableTabRow
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Tab
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
@@ -88,7 +92,13 @@ fun ApkViewerScreen(
     val viewModel: ApkViewerViewModel =
         viewModel(factory = ApkViewerViewModel.factory(appContext, sourceRef))
     val state by viewModel.uiState.collectAsStateWithLifecycle()
-    ApkViewerContent(state = state, onBack = onBack, onRetry = viewModel::retry)
+    ApkViewerContent(
+        state = state,
+        onBack = onBack,
+        onRetry = viewModel::retry,
+        onExtract = viewModel::extract,
+        onConsumeMessage = viewModel::consumeMessage,
+    )
 }
 
 /**
@@ -111,12 +121,23 @@ private fun ApkViewerContent(
     state: ApkViewerUiState,
     onBack: () -> Unit,
     onRetry: () -> Unit,
+    onExtract: (String) -> Unit,
+    onConsumeMessage: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val title = state.summary?.appLabel ?: state.summary?.packageName ?: "APK"
     val context = LocalContext.current
+    val snackbarHostState = remember { SnackbarHostState() }
+    LaunchedEffect(state.message) {
+        val msg = state.message
+        if (msg != null) {
+            snackbarHostState.showSnackbar(msg)
+            onConsumeMessage()
+        }
+    }
     Scaffold(
         modifier = modifier,
+        snackbarHost = { SnackbarHost(snackbarHostState) },
         topBar = {
             TopAppBar(
                 title = { Text(title, maxLines = 1, overflow = TextOverflow.Ellipsis) },
@@ -152,14 +173,14 @@ private fun ApkViewerContent(
                     description = state.errorMessage,
                     action = { TextButton(onClick = onRetry) { Text("Try again") } },
                 )
-                state.summary != null -> ApkTabs(state.summary)
+                state.summary != null -> ApkTabs(state.summary, onExtract = onExtract)
             }
         }
     }
 }
 
 @Composable
-private fun ApkTabs(summary: ApkSummary) {
+private fun ApkTabs(summary: ApkSummary, onExtract: (String) -> Unit) {
     var tab by rememberSaveable { mutableIntStateOf(0) }
     val titles = listOf("Overview", "X-ray", "Manifest", "Permissions", "Signature", "Resources", "Contents")
 
@@ -180,7 +201,7 @@ private fun ApkTabs(summary: ApkSummary) {
             3 -> PermissionsTab(summary.permissions)
             4 -> SignatureTab(summary.signingInfo)
             5 -> ResourcesTab(summary.entries)
-            else -> ContentsTab(summary.entries)
+            else -> ContentsTab(summary.entries, onExtract = onExtract)
         }
     }
 }
@@ -639,7 +660,7 @@ private fun PermissionsTab(permissions: List<String>) {
 }
 
 @Composable
-private fun ContentsTab(entries: List<ArchiveEntry>) {
+private fun ContentsTab(entries: List<ArchiveEntry>, onExtract: (String) -> Unit) {
     var query by remember { mutableStateOf("") }
     val files = remember(entries) { entries.filter { !it.isDirectory }.sortedBy { it.name } }
     val visible = if (query.isBlank()) files else files.filter { it.name.contains(query, ignoreCase = true) }
@@ -679,6 +700,12 @@ private fun ContentsTab(entries: List<ArchiveEntry>) {
                     )
                 }
                     MethodChip(entry.method)
+                    IconButton(onClick = { onExtract(entry.name) }) {
+                        Icon(
+                            Icons.Outlined.SaveAlt,
+                            contentDescription = "Extract to Workspace",
+                        )
+                    }
                 }
                 HorizontalDivider()
             }
