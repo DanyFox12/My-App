@@ -46,7 +46,7 @@ class PackageManagerRepository(
             val installed = pm.getInstalledPackages(PackageManager.GET_PERMISSIONS)
             val appsWithPermissions = installed.mapNotNull { info ->
                 val app = info.toInstalledPackage(includeSystem) ?: return@mapNotNull null
-                app to (info.requestedPermissions?.toList() ?: emptyList())
+                app to (info.requestedPermissions?.toList() ?: emptyList<String>())
             }
             buildPermissionIndex(appsWithPermissions)
         }
