@@ -73,12 +73,39 @@ Open in Android Studio (Ladybug or newer), or:
 Requires an Android SDK. The Gradle wrapper is pinned to 8.10.2; the build
 targets AGP 8.7.3 / Kotlin 2.1.0.
 
+### Release build
+
+```bash
+./gradlew :app:assembleRelease
+```
+
+The release build type turns on **R8** (code shrinking/optimization) and
+**resource shrinking**. Because R8 can strip anything reached only reflectively,
+the keep rules in [`app/proguard-rules.pro`](app/proguard-rules.pro) protect the
+three things that would otherwise crash a release APK at runtime:
+
+- **kotlinx.serialization** serializers (type-safe nav routes + `@Serializable`
+  models),
+- **WorkManager** workers (instantiated by class name), and
+- **Room** entity members.
+
+**Signing** is read out-of-band so no secret lives in the repo. Copy
+[`keystore.properties.template`](keystore.properties.template) to
+`keystore.properties` (git-ignored) and fill it in, or set the matching
+`DEVEXPLORER_*` environment variables in CI. With no keystore, `assembleRelease`
+still produces an **unsigned** APK (useful for verifying R8) that can't be
+installed until signed.
+
 ## Continuous integration & code quality
 
 GitHub Actions ([`.github/workflows/ci.yml`](.github/workflows/ci.yml)) runs on
 every push to `main` and every pull request:
 
 - **Build & unit tests** — `./gradlew test assembleDebug`.
+- **Release build** — `./gradlew assembleRelease` exercises R8/resource
+  shrinking so release-only breakage is caught in CI, not on a device.
+- **Android Lint** — `./gradlew :app:lintRelease` (advisory; whole graph via
+  `checkDependencies`).
 - **Static analysis** — `./gradlew detekt` over the whole module graph, using
   the shared config in [`config/detekt/detekt.yml`](config/detekt/detekt.yml).
 

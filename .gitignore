@@ -12,3 +12,6 @@ local.properties
 *.aab
 *.keystore
 !debug.keystore
+*.jks
+# Release signing secrets — never commit. Use keystore.properties.template.
+keystore.properties

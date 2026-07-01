@@ -14,6 +14,7 @@ compileSdk = "35"
 
 # AndroidX core
 coreKtx = "1.15.0"
+coreSplashscreen = "1.0.1"
 lifecycle = "2.8.7"
 activityCompose = "1.9.3"
 
@@ -38,6 +39,7 @@ detekt = "1.23.7"
 [libraries]
 # Core
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
+androidx-core-splashscreen = { group = "androidx.core", name = "core-splashscreen", version.ref = "coreSplashscreen" }
 
 # Lifecycle (lifecycle-aware collection, viewmodel-compose)
 androidx-lifecycle-runtime-ktx = { group = "androidx.lifecycle", name = "lifecycle-runtime-ktx", version.ref = "lifecycle" }

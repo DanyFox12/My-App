@@ -13,4 +13,15 @@
         <item name="android:navigationBarColor">@android:color/transparent</item>
         <item name="android:windowLayoutInDisplayCutoutMode" tools:targetApi="o_mr1">shortEdges</item>
     </style>
+
+    <!--
+      Launch theme (androidx.core:core-splashscreen). Shown from cold start until
+      the first Compose frame: brand-teal background + the launcher mark, then
+      the library swaps to Theme.DevExplorer. Backported to API 24 by the library.
+    -->
+    <style name="Theme.DevExplorer.Starting" parent="Theme.SplashScreen">
+        <item name="windowSplashScreenBackground">@color/ic_launcher_background</item>
+        <item name="windowSplashScreenAnimatedIcon">@drawable/ic_launcher_foreground</item>
+        <item name="postSplashScreenTheme">@style/Theme.DevExplorer</item>
+    </style>
 </resources>

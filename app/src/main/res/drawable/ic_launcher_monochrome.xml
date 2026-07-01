@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Monochrome layer for Android 13+ themed icons. Themed icons recolor every
+  opaque pixel to a single tint, so detail has to come from shape, not color:
+  this is line-art (a stroked folder outline + code brackets) in one color.
+-->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+
+    <!-- Folder outline -->
+    <path
+        android:strokeColor="#000000"
+        android:strokeWidth="4"
+        android:strokeLineJoin="round"
+        android:pathData="M32,40h16l6,7h22a4,4 0 0 1 4,4v27a4,4 0 0 1 -4,4H32a4,4 0 0 1 -4,-4V44a4,4 0 0 1 4,-4z" />
+
+    <!-- Code brackets: &lt; / &gt; -->
+    <path
+        android:strokeColor="#000000"
+        android:strokeWidth="4"
+        android:strokeLineCap="round"
+        android:strokeLineJoin="round"
+        android:pathData="M48,58 L42,65 L48,72" />
+    <path
+        android:strokeColor="#000000"
+        android:strokeWidth="4"
+        android:strokeLineCap="round"
+        android:strokeLineJoin="round"
+        android:pathData="M62,58 L68,65 L62,72" />
+    <path
+        android:strokeColor="#000000"
+        android:strokeWidth="4"
+        android:strokeLineCap="round"
+        android:pathData="M57,56 L53,74" />
+</vector>

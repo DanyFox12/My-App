@@ -32,15 +32,25 @@ jobs:
       - name: Unit tests
         run: ./gradlew test --stacktrace
 
+      - name: Android Lint (whole graph via :app)
+        run: ./gradlew :app:lintRelease --stacktrace
+
       - name: Assemble debug APK
         run: ./gradlew assembleDebug --stacktrace
 
-      - name: Upload test reports
+      # Exercises R8/resource shrinking so release-only breakage (stripped
+      # serializers, missing keep rules) is caught in CI, not on a user's device.
+      - name: Assemble release APK (R8)
+        run: ./gradlew assembleRelease --stacktrace
+
+      - name: Upload lint & test reports
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: test-reports
-          path: '**/build/reports/tests/'
+          name: test-and-lint-reports
+          path: |
+            **/build/reports/tests/
+            **/build/reports/lint-results-*.*
           if-no-files-found: ignore
 
   static-analysis:
