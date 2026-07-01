@@ -14,6 +14,7 @@ import com.devexplorer.app.feature.apkviewer.ApkViewerScreen
 import com.devexplorer.app.feature.codeviewer.CodeViewerScreen
 import com.devexplorer.app.feature.explorer.ExplorerScreen
 import com.devexplorer.app.feature.packages.PackagesScreen
+import com.devexplorer.app.feature.permissions.PermissionSearchScreen
 import com.devexplorer.app.feature.settings.SettingsScreen
 import com.devexplorer.app.feature.workspace.WorkspaceScreen
 import com.devexplorer.core.model.StorageRef
@@ -53,6 +54,7 @@ fun AppNavHost(
         composable<Packages> {
             PackagesScreen(
                 onOpenPackage = { pkg -> openApk(StorageRef.installedPackage(pkg)) },
+                onOpenPermissionUsage = { navController.navigate(PermissionSearch) },
             )
         }
         composable<Workspace> { WorkspaceScreen() }
@@ -73,6 +75,10 @@ fun AppNavHost(
                 fileName = route.name,
                 onBack = { navController.popBackStack() },
             )
+        }
+
+        composable<PermissionSearch> {
+            PermissionSearchScreen(onBack = { navController.popBackStack() })
         }
     }
 }

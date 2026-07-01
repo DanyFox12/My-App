@@ -15,10 +15,12 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Apps
 import androidx.compose.material.icons.outlined.ErrorOutline
 import androidx.compose.material.icons.outlined.Search
+import androidx.compose.material.icons.outlined.Shield
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
@@ -46,11 +48,17 @@ import com.devexplorer.core.model.Zone
 @Composable
 fun PackagesScreen(
     onOpenPackage: (String) -> Unit = {},
+    onOpenPermissionUsage: () -> Unit = {},
 ) {
     val appContext = LocalContext.current.applicationContext
     val viewModel: PackagesViewModel = viewModel(factory = PackagesViewModel.factory(appContext))
     val state by viewModel.uiState.collectAsStateWithLifecycle()
-    PackagesContent(state = state, onEvent = viewModel::onEvent, onOpenPackage = onOpenPackage)
+    PackagesContent(
+        state = state,
+        onEvent = viewModel::onEvent,
+        onOpenPackage = onOpenPackage,
+        onOpenPermissionUsage = onOpenPermissionUsage,
+    )
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -59,11 +67,21 @@ private fun PackagesContent(
     state: PackagesUiState,
     onEvent: (PackagesEvent) -> Unit,
     onOpenPackage: (String) -> Unit,
+    onOpenPermissionUsage: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     Scaffold(
         modifier = modifier,
-        topBar = { TopAppBar(title = { Text(stringResource(R.string.packages_title)) }) },
+        topBar = {
+            TopAppBar(
+                title = { Text(stringResource(R.string.packages_title)) },
+                actions = {
+                    IconButton(onClick = onOpenPermissionUsage) {
+                        Icon(Icons.Outlined.Shield, contentDescription = "Permission usage")
+                    }
+                },
+            )
+        },
     ) { padding ->
         Column(
             modifier = Modifier

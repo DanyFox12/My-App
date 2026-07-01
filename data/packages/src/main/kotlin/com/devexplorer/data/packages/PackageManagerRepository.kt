@@ -8,6 +8,8 @@ import android.os.Build
 import com.devexplorer.core.capability.PackagesRepository
 import com.devexplorer.core.capability.ReadCapability
 import com.devexplorer.core.model.InstalledPackage
+import com.devexplorer.core.model.PermissionUsage
+import com.devexplorer.core.model.buildPermissionIndex
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -36,6 +38,17 @@ class PackageManagerRepository(
             val installed = pm.getInstalledPackages(0)
             installed.mapNotNull { info -> info.toInstalledPackage(includeSystem) }
                 .sortedBy { it.label.lowercase() }
+        }
+
+    override suspend fun permissionUsage(includeSystem: Boolean): List<PermissionUsage> =
+        withContext(io) {
+            @Suppress("DEPRECATION")
+            val installed = pm.getInstalledPackages(PackageManager.GET_PERMISSIONS)
+            val appsWithPermissions = installed.mapNotNull { info ->
+                val app = info.toInstalledPackage(includeSystem) ?: return@mapNotNull null
+                app to (info.requestedPermissions?.toList() ?: emptyList())
+            }
+            buildPermissionIndex(appsWithPermissions)
         }
 
     override suspend fun openApk(packageName: String): InputStream = withContext(io) {

@@ -40,6 +40,10 @@ data class ApkViewer(val refArg: String)
 @Serializable
 data class CodeViewer(val refArg: String, val name: String)
 
+/** Detail destination: reverse permission lookup across installed apps. */
+@Serializable
+data object PermissionSearch
+
 /**
  * The four top-level destinations shown in the bottom navigation bar. Each pairs
  * a type-safe route with its label and selected/unselected icons.
