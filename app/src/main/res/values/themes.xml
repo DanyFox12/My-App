@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources xmlns:tools="http://schemas.android.com/tools">
+    <!--
+      Host (pre-Compose) theme. This styles only the brief window before Compose
+      draws its first frame, so it stays minimal. The real theming is in
+      DevExplorerTheme (Compose / Material 3). Transparent system bars let us go
+      edge-to-edge. Parented to a framework theme so we need no AppCompat/Material
+      view dependency. A values-night/ variant supplies the dark window background.
+    -->
+    <style name="Theme.DevExplorer" parent="@android:style/Theme.Material.Light.NoActionBar">
+        <item name="android:windowBackground">@color/window_background</item>
+        <item name="android:statusBarColor">@android:color/transparent</item>
+        <item name="android:navigationBarColor">@android:color/transparent</item>
+        <item name="android:windowLayoutInDisplayCutoutMode" tools:targetApi="o_mr1">shortEdges</item>
+    </style>
+</resources>

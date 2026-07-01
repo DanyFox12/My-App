@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Light window background; matches md_background in the Compose theme to
+         avoid a color flash before the first Compose frame. -->
+    <color name="window_background">#F5FAFB</color>
+    <color name="ic_launcher_background">#00696E</color>
+</resources>
