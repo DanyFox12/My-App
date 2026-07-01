@@ -1,5 +1,6 @@
 package com.devexplorer.app.navigation
 
+import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.runtime.Composable
@@ -8,6 +9,7 @@ import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.toRoute
+import com.devexplorer.core.designsystem.performance.LocalPerformanceBudget
 import com.devexplorer.app.feature.apkviewer.ApkViewerScreen
 import com.devexplorer.app.feature.codeviewer.CodeViewerScreen
 import com.devexplorer.app.feature.explorer.ExplorerScreen
@@ -37,12 +39,15 @@ fun AppNavHost(
         navController.navigate(CodeViewer(StorageRefArgs.encode(ref), name))
     }
 
+    // Scale transition duration to the device: 0ms (snap) on low-end phones.
+    val fade = tween<Float>(durationMillis = LocalPerformanceBudget.current.crossfadeMillis)
+
     NavHost(
         navController = navController,
         startDestination = Explorer,
         modifier = modifier,
-        enterTransition = { fadeIn() },
-        exitTransition = { fadeOut() },
+        enterTransition = { fadeIn(fade) },
+        exitTransition = { fadeOut(fade) },
     ) {
         composable<Explorer> { ExplorerScreen(onOpenApk = openApk, onOpenText = openText) }
         composable<Packages> {
