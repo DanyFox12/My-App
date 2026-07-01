@@ -26,6 +26,10 @@ data class ExplorerUiState(
     val message: String? = null,
     /** Recently opened folders, offered for one-tap reopen when no root is set. */
     val recents: List<RecentLocation> = emptyList(),
+    /** In-folder search query (filters the current listing by name). */
+    val searchQuery: String = "",
+    /** Whether the search field is visible in the app bar. */
+    val isSearchActive: Boolean = false,
 ) {
     /** The folder currently being shown, or null before a root is picked. */
     val current: Crumb? get() = breadcrumb.lastOrNull()
@@ -33,9 +37,22 @@ data class ExplorerUiState(
     /** Whether an "up" navigation is possible (we're below the picked root). */
     val canNavigateUp: Boolean get() = breadcrumb.size > 1
 
+    /** Entries after applying the search filter. */
+    val visibleEntries: List<FileNode>
+        get() = if (searchQuery.isBlank()) {
+            entries
+        } else {
+            entries.filter { it.name.contains(searchQuery, ignoreCase = true) }
+        }
+
     /** Show the empty-listing state only when a folder is loaded but has no items. */
     val isEmptyFolder: Boolean
-        get() = hasRoot && !isLoading && errorMessage == null && entries.isEmpty()
+        get() = hasRoot && !isLoading && errorMessage == null && searchQuery.isBlank() && entries.isEmpty()
+
+    /** A search is active but nothing matches. */
+    val isNoMatches: Boolean
+        get() = hasRoot && !isLoading && errorMessage == null &&
+            searchQuery.isNotBlank() && visibleEntries.isEmpty()
 }
 
 /** Events the screen emits; the ViewModel reduces them into new state. */
@@ -51,4 +68,6 @@ sealed interface ExplorerEvent {
     data object Retry : ExplorerEvent
     data object DismissError : ExplorerEvent
     data object ConsumeMessage : ExplorerEvent
+    data object ToggleSearch : ExplorerEvent
+    data class SetSearchQuery(val query: String) : ExplorerEvent
 }

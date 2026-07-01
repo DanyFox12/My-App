@@ -67,8 +67,17 @@ class ExplorerViewModel(
             ExplorerEvent.Retry -> loadCurrent()
             ExplorerEvent.DismissError -> _uiState.update { it.copy(errorMessage = null) }
             ExplorerEvent.ConsumeMessage -> _uiState.update { it.copy(message = null) }
+            ExplorerEvent.ToggleSearch -> _uiState.update {
+                if (it.isSearchActive) it.copy(isSearchActive = false, searchQuery = "")
+                else it.copy(isSearchActive = true)
+            }
+            is ExplorerEvent.SetSearchQuery -> _uiState.update { it.copy(searchQuery = event.query) }
         }
     }
+
+    /** Clear any active search — used when the visible folder changes. */
+    private fun clearSearch(state: ExplorerUiState): ExplorerUiState =
+        state.copy(searchQuery = "", isSearchActive = false)
 
     private fun onCopyToWorkspace(node: FileNode) {
         if (node.isDirectory) return
@@ -89,7 +98,7 @@ class ExplorerViewModel(
             openDocumentTree(treeUri)
                 .onSuccess { root ->
                     _uiState.update {
-                        it.copy(
+                        clearSearch(it).copy(
                             hasRoot = true,
                             breadcrumb = listOf(Crumb(root.ref, root.displayName)),
                         )
@@ -107,7 +116,7 @@ class ExplorerViewModel(
 
     private fun onOpenRecent(recent: RecentLocation) {
         _uiState.update {
-            it.copy(
+            clearSearch(it).copy(
                 hasRoot = true,
                 breadcrumb = listOf(Crumb(recent.ref, recent.label)),
                 errorMessage = null,
@@ -120,7 +129,7 @@ class ExplorerViewModel(
 
     private fun onOpenFolder(node: FileNode) {
         if (!node.isDirectory) return
-        _uiState.update { it.copy(breadcrumb = it.breadcrumb + Crumb(node.ref, node.name)) }
+        _uiState.update { clearSearch(it).copy(breadcrumb = it.breadcrumb + Crumb(node.ref, node.name)) }
         loadCurrent()
     }
 
@@ -132,14 +141,14 @@ class ExplorerViewModel(
     private fun onNavigateUp() {
         val bc = _uiState.value.breadcrumb
         if (bc.size <= 1) return
-        _uiState.update { it.copy(breadcrumb = bc.dropLast(1)) }
+        _uiState.update { clearSearch(it).copy(breadcrumb = bc.dropLast(1)) }
         loadCurrent()
     }
 
     private fun onNavigateToCrumb(index: Int) {
         val bc = _uiState.value.breadcrumb
         if (index !in bc.indices || index == bc.lastIndex) return
-        _uiState.update { it.copy(breadcrumb = bc.subList(0, index + 1)) }
+        _uiState.update { clearSearch(it).copy(breadcrumb = bc.subList(0, index + 1)) }
         loadCurrent()
     }
 

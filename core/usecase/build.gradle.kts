@@ -9,4 +9,7 @@ dependencies {
     implementation(project(":core:model"))
     implementation(project(":core:capability"))
     implementation(libs.kotlinx.coroutines.core)
+
+    testImplementation(libs.junit)
+    testImplementation(libs.kotlinx.coroutines.test)
 }

@@ -1,5 +1,7 @@
 package com.devexplorer.app.feature.apkviewer
 
+import android.widget.Toast
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -15,6 +17,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.outlined.ErrorOutline
 import androidx.compose.material.icons.outlined.Key
+import androidx.compose.material.icons.outlined.Search
 import androidx.compose.material.icons.outlined.VerifiedUser
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ElevatedCard
@@ -23,6 +26,7 @@ import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.ScrollableTabRow
 import androidx.compose.material3.Surface
@@ -33,11 +37,15 @@ import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalClipboardManager
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -284,9 +292,15 @@ private fun CertificateCard(index: Int, total: Int, cert: CertificateInfo) {
 
 @Composable
 private fun Fingerprint(label: String, value: String) {
-    Column(modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)) {
+    val copy = rememberCopier()
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable { copy(label, value) }
+            .padding(horizontal = 16.dp, vertical = 8.dp),
+    ) {
         Text(
-            text = label,
+            text = "$label · tap to copy",
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
@@ -295,6 +309,19 @@ private fun Fingerprint(label: String, value: String) {
             style = MaterialTheme.typography.bodySmall.copy(fontFamily = FontFamily.Monospace),
             color = MaterialTheme.colorScheme.onSurface,
         )
+    }
+}
+
+/** Returns a (label, value) -> Unit that copies to the clipboard and toasts. */
+@Composable
+private fun rememberCopier(): (String, String) -> Unit {
+    val clipboard = LocalClipboardManager.current
+    val context = LocalContext.current
+    return remember(clipboard, context) {
+        { label, value ->
+            clipboard.setText(AnnotatedString(value))
+            Toast.makeText(context, "Copied $label", Toast.LENGTH_SHORT).show()
+        }
     }
 }
 
@@ -394,9 +421,15 @@ private fun PermissionsTab(permissions: List<String>) {
         )
         return
     }
+    val copy = rememberCopier()
     LazyColumn(modifier = Modifier.fillMaxSize()) {
         items(items = permissions, key = { it }) { permission ->
-            Column(modifier = Modifier.padding(horizontal = 16.dp, vertical = 10.dp)) {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clickable { copy("permission", permission) }
+                    .padding(horizontal = 16.dp, vertical = 10.dp),
+            ) {
                 Text(
                     text = permission.substringAfterLast('.'),
                     style = MaterialTheme.typography.bodyLarge,
@@ -417,9 +450,23 @@ private fun PermissionsTab(permissions: List<String>) {
 
 @Composable
 private fun ContentsTab(entries: List<ArchiveEntry>) {
-    val files = entries.filter { !it.isDirectory }.sortedBy { it.name }
-    LazyColumn(modifier = Modifier.fillMaxSize()) {
-        items(items = files, key = { it.name }) { entry ->
+    var query by remember { mutableStateOf("") }
+    val files = remember(entries) { entries.filter { !it.isDirectory }.sortedBy { it.name } }
+    val visible = if (query.isBlank()) files else files.filter { it.name.contains(query, ignoreCase = true) }
+
+    Column(modifier = Modifier.fillMaxSize()) {
+        OutlinedTextField(
+            value = query,
+            onValueChange = { query = it },
+            leadingIcon = { Icon(Icons.Outlined.Search, contentDescription = null) },
+            placeholder = { Text("Filter entries") },
+            singleLine = true,
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 16.dp, vertical = 8.dp),
+        )
+        LazyColumn(modifier = Modifier.fillMaxSize()) {
+            items(items = visible, key = { it.name }) { entry ->
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -441,9 +488,10 @@ private fun ContentsTab(entries: List<ArchiveEntry>) {
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                 }
-                MethodChip(entry.method)
+                    MethodChip(entry.method)
+                }
+                HorizontalDivider()
             }
-            HorizontalDivider()
         }
     }
 }

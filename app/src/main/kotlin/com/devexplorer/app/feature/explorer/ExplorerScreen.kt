@@ -25,6 +25,8 @@ import androidx.compose.material.icons.outlined.FolderOff
 import androidx.compose.material.icons.outlined.FolderOpen
 import androidx.compose.material.icons.outlined.History
 import androidx.compose.material.icons.outlined.MoveToInbox
+import androidx.compose.material.icons.outlined.Search
+import androidx.compose.material.icons.outlined.SearchOff
 import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -37,6 +39,8 @@ import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
+import androidx.compose.material3.TextField
+import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -44,7 +48,11 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -98,8 +106,17 @@ private fun ExplorerContent(
         if (uri != null) onEvent(ExplorerEvent.TreePicked(uri.toString()))
     }
 
-    // Route the system back gesture/button to "up" while we're below the root.
-    BackHandler(enabled = state.canNavigateUp) { onEvent(ExplorerEvent.NavigateUp) }
+    // Back closes search first, then navigates up within the folder tree.
+    BackHandler(enabled = state.isSearchActive || state.canNavigateUp) {
+        if (state.isSearchActive) onEvent(ExplorerEvent.ToggleSearch) else onEvent(ExplorerEvent.NavigateUp)
+    }
+
+    // Auto-focus the search field when it opens; hide the keyboard when it closes.
+    val searchFocus = remember { FocusRequester() }
+    val keyboard = LocalSoftwareKeyboardController.current
+    LaunchedEffect(state.isSearchActive) {
+        if (state.isSearchActive) searchFocus.requestFocus() else keyboard?.hide()
+    }
 
     // Show one-shot messages (copy results) as a snackbar, then consume them so
     // they don't re-appear on recomposition/rotation.
@@ -118,20 +135,46 @@ private fun ExplorerContent(
         topBar = {
             TopAppBar(
                 title = {
-                    Text(
-                        text = state.current?.name ?: stringResource(R.string.explorer_title),
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis,
-                    )
+                    if (state.isSearchActive) {
+                        TextField(
+                            value = state.searchQuery,
+                            onValueChange = { onEvent(ExplorerEvent.SetSearchQuery(it)) },
+                            placeholder = { Text("Search this folder") },
+                            singleLine = true,
+                            colors = TextFieldDefaults.colors(
+                                focusedContainerColor = Color.Transparent,
+                                unfocusedContainerColor = Color.Transparent,
+                                focusedIndicatorColor = Color.Transparent,
+                                unfocusedIndicatorColor = Color.Transparent,
+                            ),
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .focusRequester(searchFocus),
+                        )
+                    } else {
+                        Text(
+                            text = state.current?.name ?: stringResource(R.string.explorer_title),
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
+                        )
+                    }
                 },
                 navigationIcon = {
-                    if (state.canNavigateUp) {
-                        IconButton(onClick = { onEvent(ExplorerEvent.NavigateUp) }) {
+                    when {
+                        state.isSearchActive -> IconButton(onClick = { onEvent(ExplorerEvent.ToggleSearch) }) {
+                            Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Close search")
+                        }
+                        state.canNavigateUp -> IconButton(onClick = { onEvent(ExplorerEvent.NavigateUp) }) {
                             Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Up")
                         }
                     }
                 },
                 actions = {
+                    if (state.hasRoot && !state.isSearchActive) {
+                        IconButton(onClick = { onEvent(ExplorerEvent.ToggleSearch) }) {
+                            Icon(Icons.Outlined.Search, contentDescription = "Search")
+                        }
+                    }
                     IconButton(onClick = { pickFolder.launch(null) }) {
                         Icon(Icons.Outlined.FolderOpen, contentDescription = "Pick a folder")
                     }
@@ -173,8 +216,13 @@ private fun ExplorerContent(
                         title = "Empty folder",
                         description = "There's nothing to show in this folder.",
                     )
+                    state.isNoMatches -> EmptyState(
+                        icon = Icons.Outlined.SearchOff,
+                        title = "No matches",
+                        description = "No items match \"${state.searchQuery}\".",
+                    )
                     else -> FileList(
-                        entries = state.entries,
+                        entries = state.visibleEntries,
                         onEvent = onEvent,
                         onOpenApk = onOpenApk,
                         onOpenText = onOpenText,

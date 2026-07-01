@@ -9,4 +9,6 @@ plugins {
 // because there's no AAPT2 / manifest step. See docs/ARCHITECTURE.md §2.2.
 dependencies {
     implementation(libs.kotlinx.serialization.json)
+
+    testImplementation(libs.junit)
 }
