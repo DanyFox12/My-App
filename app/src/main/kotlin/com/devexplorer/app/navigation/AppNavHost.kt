@@ -27,7 +27,7 @@ fun AppNavHost(
     navController: NavHostController,
     modifier: Modifier = Modifier,
 ) {
-    // Navigate to the APK viewer for a given source ref (used by the Explorer).
+    // Navigate to the APK viewer for a given source ref (a file or a package).
     val openApk: (StorageRef) -> Unit = { ref ->
         navController.navigate(ApkViewer(StorageRefArgs.encode(ref)))
     }
@@ -40,7 +40,11 @@ fun AppNavHost(
         exitTransition = { fadeOut() },
     ) {
         composable<Explorer> { ExplorerScreen(onOpenApk = openApk) }
-        composable<Packages> { PackagesScreen() }
+        composable<Packages> {
+            PackagesScreen(
+                onOpenPackage = { pkg -> openApk(StorageRef.installedPackage(pkg)) },
+            )
+        }
         composable<Workspace> { WorkspaceScreen() }
         composable<Settings> { SettingsScreen() }
 

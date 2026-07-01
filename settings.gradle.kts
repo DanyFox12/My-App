@@ -35,3 +35,5 @@ include(":data:storage")
 include(":data:workspace")
 // M4 adds read-only APK/ZIP analysis.
 include(":data:apk")
+// M5 adds read-only PackageManager inspection.
+include(":data:packages")

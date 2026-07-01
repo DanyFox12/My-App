@@ -10,6 +10,7 @@ import com.devexplorer.core.model.ApkSummary
 import com.devexplorer.core.model.StorageRef
 import com.devexplorer.core.usecase.AnalyzeApkUseCase
 import com.devexplorer.data.apk.ApkFileRepository
+import com.devexplorer.data.packages.PackageManagerRepository
 import com.devexplorer.data.storage.SafStorageRepository
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -64,8 +65,9 @@ class ApkViewerViewModel(
             viewModelFactory {
                 initializer {
                     val storage = SafStorageRepository(appContext)
+                    val packages = PackageManagerRepository(appContext)
                     val apk = ApkFileRepository(appContext)
-                    ApkViewerViewModel(AnalyzeApkUseCase(storage, apk), sourceRef)
+                    ApkViewerViewModel(AnalyzeApkUseCase(storage, packages, apk), sourceRef)
                 }
             }
     }
