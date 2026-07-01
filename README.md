@@ -20,7 +20,8 @@ unless you turn it on.
   in the same viewer.
 - **Workspace** — the app's *only* writable surface: an app-private sandbox you
   copy files into, with rename/delete.
-- **Code Viewer** — syntax-highlighted, read-only text/code viewing.
+- **Code Viewer** — syntax-highlighted, read-only text/code viewing, with
+  in-file search (match count + next/previous navigation).
 - **Settings** — Material You dynamic color, per-app language (English/العربية),
   and a network opt-in.
 
