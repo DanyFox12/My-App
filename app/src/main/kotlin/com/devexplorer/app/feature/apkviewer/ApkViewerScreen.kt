@@ -113,7 +113,7 @@ private fun ApkViewerContent(
 @Composable
 private fun ApkTabs(summary: ApkSummary) {
     var tab by rememberSaveable { mutableIntStateOf(0) }
-    val titles = listOf("Overview", "Permissions", "Signature", "Contents")
+    val titles = listOf("Overview", "Permissions", "Signature", "Resources", "Contents")
 
     Column(modifier = Modifier.fillMaxSize()) {
         ScrollableTabRow(selectedTabIndex = tab, edgePadding = 0.dp) {
@@ -129,9 +129,100 @@ private fun ApkTabs(summary: ApkSummary) {
             0 -> OverviewTab(summary)
             1 -> PermissionsTab(summary.permissions)
             2 -> SignatureTab(summary.signingInfo)
+            3 -> ResourcesTab(summary.entries)
             else -> ContentsTab(summary.entries)
         }
     }
+}
+
+private data class ResourceOverview(
+    val hasArsc: Boolean,
+    val resByType: List<Pair<String, Int>>,
+    val nativeLibsByAbi: List<Pair<String, Int>>,
+    val assetCount: Int,
+)
+
+private fun resourceOverviewOf(entries: List<ArchiveEntry>): ResourceOverview {
+    val files = entries.filter { !it.isDirectory }
+    val resByType = files
+        .filter { it.name.startsWith("res/") }
+        .groupingBy { entry ->
+            // res/drawable-hdpi/ic.png -> "drawable" (strip the config qualifier)
+            entry.name.removePrefix("res/").substringBefore('/').substringBefore('-')
+        }
+        .eachCount()
+        .toList()
+        .sortedByDescending { it.second }
+    val nativeLibsByAbi = files
+        .filter { it.name.startsWith("lib/") }
+        .groupingBy { it.name.removePrefix("lib/").substringBefore('/') }
+        .eachCount()
+        .toList()
+        .sortedByDescending { it.second }
+    return ResourceOverview(
+        hasArsc = files.any { it.name == "resources.arsc" },
+        resByType = resByType,
+        nativeLibsByAbi = nativeLibsByAbi,
+        assetCount = files.count { it.name.startsWith("assets/") },
+    )
+}
+
+@Composable
+private fun ResourcesTab(entries: List<ArchiveEntry>) {
+    val overview = remember(entries) { resourceOverviewOf(entries) }
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .verticalScroll(rememberScrollState())
+            .padding(16.dp),
+        verticalArrangement = Arrangement.spacedBy(12.dp),
+    ) {
+        ElevatedCard(modifier = Modifier.fillMaxWidth()) {
+            Column(modifier = Modifier.padding(vertical = 8.dp)) {
+                InfoRow("resources.arsc", if (overview.hasArsc) "present (compiled table)" else "absent")
+                InfoRow("assets/ files", overview.assetCount.toString())
+            }
+        }
+
+        if (overview.resByType.isNotEmpty()) {
+            SectionTitle("Resources by type (res/)")
+            ElevatedCard(modifier = Modifier.fillMaxWidth()) {
+                Column(modifier = Modifier.padding(vertical = 8.dp)) {
+                    overview.resByType.forEach { (type, count) ->
+                        InfoRow(type, count.toString())
+                    }
+                }
+            }
+        }
+
+        if (overview.nativeLibsByAbi.isNotEmpty()) {
+            SectionTitle("Native libraries (lib/<abi>)")
+            ElevatedCard(modifier = Modifier.fillMaxWidth()) {
+                Column(modifier = Modifier.padding(vertical = 8.dp)) {
+                    overview.nativeLibsByAbi.forEach { (abi, count) ->
+                        InfoRow(abi, count.toString())
+                    }
+                }
+            }
+        }
+
+        Text(
+            text = "res/ holds compiled resources grouped by type and configuration " +
+                "qualifier; resources.arsc is the compiled lookup table that maps resource " +
+                "IDs to these entries.",
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+    }
+}
+
+@Composable
+private fun SectionTitle(text: String) {
+    Text(
+        text = text,
+        style = MaterialTheme.typography.titleSmall,
+        color = MaterialTheme.colorScheme.onSurface,
+    )
 }
 
 @Composable
