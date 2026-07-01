@@ -61,6 +61,7 @@ dependencies {
     implementation(project(":core:usecase"))
     implementation(project(":data:storage"))
     implementation(project(":data:workspace"))
+    implementation(project(":data:apk"))
 
     implementation(libs.androidx.core.ktx)
     implementation(libs.bundles.lifecycle)

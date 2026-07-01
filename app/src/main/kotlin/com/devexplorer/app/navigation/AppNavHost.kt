@@ -7,25 +7,31 @@ import androidx.compose.ui.Modifier
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
+import androidx.navigation.toRoute
+import com.devexplorer.app.feature.apkviewer.ApkViewerScreen
 import com.devexplorer.app.feature.explorer.ExplorerScreen
 import com.devexplorer.app.feature.packages.PackagesScreen
 import com.devexplorer.app.feature.settings.SettingsScreen
 import com.devexplorer.app.feature.workspace.WorkspaceScreen
+import com.devexplorer.core.model.StorageRef
 
 /**
- * The app's single NavHost. For milestone 1 it wires the four top-level
- * screens; detail destinations (ApkViewer, CodeViewer, Signature, …) are added
- * in later milestones as their features land.
+ * The app's single NavHost. Top-level tab destinations plus the ApkViewer detail
+ * destination (pushed onto the back stack from the Explorer).
  *
- * Transitions are simple cross-fades for now — light enough to stay smooth on
- * low-end devices. Per-feature shared-element motion comes later and will be
- * gated by the device performance budget.
+ * Transitions are simple cross-fades — light enough to stay smooth on low-end
+ * devices; richer per-feature motion comes later, gated by the device budget.
  */
 @Composable
 fun AppNavHost(
     navController: NavHostController,
     modifier: Modifier = Modifier,
 ) {
+    // Navigate to the APK viewer for a given source ref (used by the Explorer).
+    val openApk: (StorageRef) -> Unit = { ref ->
+        navController.navigate(ApkViewer(StorageRefArgs.encode(ref)))
+    }
+
     NavHost(
         navController = navController,
         startDestination = Explorer,
@@ -33,9 +39,17 @@ fun AppNavHost(
         enterTransition = { fadeIn() },
         exitTransition = { fadeOut() },
     ) {
-        composable<Explorer> { ExplorerScreen() }
+        composable<Explorer> { ExplorerScreen(onOpenApk = openApk) }
         composable<Packages> { PackagesScreen() }
         composable<Workspace> { WorkspaceScreen() }
         composable<Settings> { SettingsScreen() }
+
+        composable<ApkViewer> { backStackEntry ->
+            val route = backStackEntry.toRoute<ApkViewer>()
+            ApkViewerScreen(
+                sourceRef = StorageRefArgs.decode(route.refArg),
+                onBack = { navController.popBackStack() },
+            )
+        }
     }
 }

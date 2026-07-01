@@ -23,6 +23,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.devexplorer.core.designsystem.theme.DevExplorerTheme
+import com.devexplorer.core.designsystem.util.formatBytes
 import com.devexplorer.core.model.FileCategory
 import com.devexplorer.core.model.FileNode
 import com.devexplorer.core.model.StorageRef
@@ -97,18 +98,6 @@ private fun FileCategory.icon(): ImageVector = when (this) {
 private fun FileNode.subtitle(): String? {
     val size = sizeBytes ?: return null
     return formatBytes(size)
-}
-
-private fun formatBytes(bytes: Long): String {
-    if (bytes < 1024) return "$bytes B"
-    val units = arrayOf("KB", "MB", "GB", "TB")
-    var value = bytes.toDouble() / 1024
-    var i = 0
-    while (value >= 1024 && i < units.lastIndex) {
-        value /= 1024
-        i++
-    }
-    return "%.1f %s".format(value, units[i])
 }
 
 @Preview

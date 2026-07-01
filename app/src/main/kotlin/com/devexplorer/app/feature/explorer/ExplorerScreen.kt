@@ -49,7 +49,9 @@ import com.devexplorer.app.R
 import com.devexplorer.core.designsystem.component.EmptyState
 import com.devexplorer.core.designsystem.component.FileRow
 import com.devexplorer.core.designsystem.component.ZoneBanner
+import com.devexplorer.core.model.FileCategory
 import com.devexplorer.core.model.FileNode
+import com.devexplorer.core.model.StorageRef
 
 /**
  * Explorer — stateful entry point. Owns the ViewModel and forwards its state to
@@ -57,11 +59,13 @@ import com.devexplorer.core.model.FileNode
  * previewable and unit-friendly (docs/ARCHITECTURE.md §3).
  */
 @Composable
-fun ExplorerScreen() {
+fun ExplorerScreen(
+    onOpenApk: (StorageRef) -> Unit = {},
+) {
     val appContext = LocalContext.current.applicationContext
     val viewModel: ExplorerViewModel = viewModel(factory = ExplorerViewModel.factory(appContext))
     val state by viewModel.uiState.collectAsStateWithLifecycle()
-    ExplorerContent(state = state, onEvent = viewModel::onEvent)
+    ExplorerContent(state = state, onEvent = viewModel::onEvent, onOpenApk = onOpenApk)
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -69,6 +73,7 @@ fun ExplorerScreen() {
 private fun ExplorerContent(
     state: ExplorerUiState,
     onEvent: (ExplorerEvent) -> Unit,
+    onOpenApk: (StorageRef) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     // SAF folder picker. The OS shows the system document UI; the result is a
@@ -150,7 +155,7 @@ private fun ExplorerContent(
                         title = "Empty folder",
                         description = "There's nothing to show in this folder.",
                     )
-                    else -> FileList(entries = state.entries, onEvent = onEvent)
+                    else -> FileList(entries = state.entries, onEvent = onEvent, onOpenApk = onOpenApk)
                 }
 
                 // A slim top progress bar for refreshes that keep existing content.
@@ -170,16 +175,18 @@ private fun ExplorerContent(
 private fun FileList(
     entries: List<FileNode>,
     onEvent: (ExplorerEvent) -> Unit,
+    onOpenApk: (StorageRef) -> Unit,
 ) {
     LazyColumn(modifier = Modifier.fillMaxSize()) {
         items(items = entries, key = { it.ref.raw }) { node ->
             FileRow(
                 node = node,
                 onClick = {
-                    onEvent(
-                        if (node.isDirectory) ExplorerEvent.OpenFolder(node)
-                        else ExplorerEvent.OpenFile(node),
-                    )
+                    when {
+                        node.isDirectory -> onEvent(ExplorerEvent.OpenFolder(node))
+                        node.category == FileCategory.Apk -> onOpenApk(node.ref)
+                        else -> onEvent(ExplorerEvent.OpenFile(node))
+                    }
                 },
                 // Files (not folders) get a "copy into Workspace" action — the
                 // read System zone's bridge into the writable sandbox.

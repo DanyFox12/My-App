@@ -33,3 +33,5 @@ include(":core:usecase")
 include(":data:storage")
 // M3 adds the sandbox — the app's only writable surface.
 include(":data:workspace")
+// M4 adds read-only APK/ZIP analysis.
+include(":data:apk")
