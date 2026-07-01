@@ -29,7 +29,7 @@ internal object SignatureExtractor {
 
         val multipleSigners =
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
-                info.signingInfo?.hasMultipleSigners == true
+                info.signingInfo?.hasMultipleSigners() == true
             } else {
                 signatures.size > 1
             }
