@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">DevExplorer</string>
+
+    <!-- Bottom navigation destinations -->
+    <string name="nav_explorer">Explorer</string>
+    <string name="nav_packages">Packages</string>
+    <string name="nav_workspace">Workspace</string>
+    <string name="nav_settings">Settings</string>
+
+    <!-- Explorer -->
+    <string name="explorer_title">Explorer</string>
+    <string name="explorer_empty_title">Browse your files</string>
+    <string name="explorer_empty_desc">Pick a folder to explore. DevExplorer reads only what you grant it — nothing is modified.</string>
+
+    <!-- Packages -->
+    <string name="packages_title">Installed packages</string>
+    <string name="packages_empty_title">Installed apps</string>
+    <string name="packages_empty_desc">Inspect installed packages: manifest, permissions, signatures and more. Read-only.</string>
+
+    <!-- Workspace -->
+    <string name="workspace_title">Workspace</string>
+    <string name="workspace_empty_title">Your sandbox</string>
+    <string name="workspace_empty_desc">This is the only place DevExplorer can write. Copy files here to extract, inspect, and experiment safely.</string>
+
+    <!-- Settings -->
+    <string name="settings_title">Settings</string>
+    <string name="settings_empty_title">Settings</string>
+    <string name="settings_empty_desc">Theme, language, and optional features will live here.</string>
+    <string name="settings_theme">Appearance</string>
+    <string name="settings_theme_mode">Theme</string>
+    <string name="settings_theme_system">Follow system</string>
+    <string name="settings_theme_light">Light</string>
+    <string name="settings_theme_dark">Dark</string>
+    <string name="settings_dynamic_color">Dynamic color</string>
+    <string name="settings_dynamic_color_desc">Match the app colors to your wallpaper (Android 12+).</string>
+    <string name="settings_dynamic_color_unavailable">Available on Android 12 and newer.</string>
+    <string name="settings_language">Language</string>
+    <string name="settings_language_system">System default</string>
+    <string name="settings_language_english">English</string>
+    <string name="settings_language_arabic">العربية</string>
+    <string name="settings_network">Network features</string>
+    <string name="settings_network_desc">Off by default. Turn on to allow optional online features you configure.</string>
+</resources>

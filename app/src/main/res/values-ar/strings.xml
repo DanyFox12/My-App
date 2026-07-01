@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">ديف إكسبلورر</string>
+
+    <!-- Bottom navigation destinations -->
+    <string name="nav_explorer">المستكشف</string>
+    <string name="nav_packages">الحزم</string>
+    <string name="nav_workspace">مساحة العمل</string>
+    <string name="nav_settings">الإعدادات</string>
+
+    <!-- Explorer -->
+    <string name="explorer_title">المستكشف</string>
+    <string name="explorer_empty_title">تصفّح ملفاتك</string>
+    <string name="explorer_empty_desc">اختر مجلداً للاستكشاف. يقرأ ديف إكسبلورر فقط ما تمنحه إياه — لا يتم تعديل أي شيء.</string>
+
+    <!-- Packages -->
+    <string name="packages_title">الحزم المثبّتة</string>
+    <string name="packages_empty_title">التطبيقات المثبّتة</string>
+    <string name="packages_empty_desc">افحص الحزم المثبّتة: البيان، الأذونات، التواقيع وأكثر. للقراءة فقط.</string>
+
+    <!-- Workspace -->
+    <string name="workspace_title">مساحة العمل</string>
+    <string name="workspace_empty_title">صندوقك الرملي</string>
+    <string name="workspace_empty_desc">هذا هو المكان الوحيد الذي يمكن للتطبيق الكتابة فيه. انسخ الملفات هنا لاستخراجها وفحصها والتجربة بأمان.</string>
+
+    <!-- Settings -->
+    <string name="settings_title">الإعدادات</string>
+    <string name="settings_empty_title">الإعدادات</string>
+    <string name="settings_empty_desc">المظهر واللغة والميزات الاختيارية ستكون هنا.</string>
+    <string name="settings_theme">المظهر</string>
+    <string name="settings_theme_mode">السمة</string>
+    <string name="settings_theme_system">حسب النظام</string>
+    <string name="settings_theme_light">فاتح</string>
+    <string name="settings_theme_dark">داكن</string>
+    <string name="settings_dynamic_color">الألوان الديناميكية</string>
+    <string name="settings_dynamic_color_desc">اجعل ألوان التطبيق تطابق خلفيتك (أندرويد 12+).</string>
+    <string name="settings_dynamic_color_unavailable">متاح على أندرويد 12 والأحدث.</string>
+    <string name="settings_language">اللغة</string>
+    <string name="settings_language_system">افتراضي النظام</string>
+    <string name="settings_language_english">English</string>
+    <string name="settings_language_arabic">العربية</string>
+    <string name="settings_network">ميزات الشبكة</string>
+    <string name="settings_network_desc">معطّلة افتراضياً. فعّلها للسماح بالميزات الإنترنتية الاختيارية التي تضبطها.</string>
+</resources>

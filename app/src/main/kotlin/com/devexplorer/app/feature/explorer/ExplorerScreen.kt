@@ -1,0 +1,402 @@
+package com.devexplorer.app.feature.explorer
+
+import android.net.Uri
+import androidx.activity.compose.BackHandler
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.CreateNewFolder
+import androidx.compose.material.icons.outlined.ErrorOutline
+import androidx.compose.material.icons.outlined.FolderOff
+import androidx.compose.material.icons.outlined.FolderOpen
+import androidx.compose.material.icons.outlined.History
+import androidx.compose.material.icons.outlined.MoveToInbox
+import androidx.compose.material.icons.outlined.Search
+import androidx.compose.material.icons.outlined.SearchOff
+import androidx.compose.material3.Button
+import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.LinearProgressIndicator
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
+import androidx.compose.material3.TextField
+import androidx.compose.material3.TextFieldDefaults
+import androidx.compose.material3.TopAppBar
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalSoftwareKeyboardController
+import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.dp
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.lifecycle.viewmodel.compose.viewModel
+import com.devexplorer.app.R
+import com.devexplorer.core.designsystem.component.EmptyState
+import com.devexplorer.core.designsystem.component.FileRow
+import com.devexplorer.core.designsystem.component.ZoneBanner
+import com.devexplorer.core.model.FileCategory
+import com.devexplorer.core.model.FileNode
+import com.devexplorer.core.model.RecentLocation
+import com.devexplorer.core.model.StorageRef
+
+/**
+ * Explorer — stateful entry point. Owns the ViewModel and forwards its state to
+ * the stateless [ExplorerContent]. Keeping the two apart makes the content
+ * previewable and unit-friendly (docs/ARCHITECTURE.md §3).
+ */
+@Composable
+fun ExplorerScreen(
+    onOpenApk: (StorageRef) -> Unit = {},
+    onOpenText: (StorageRef, String) -> Unit = { _, _ -> },
+) {
+    val appContext = LocalContext.current.applicationContext
+    val viewModel: ExplorerViewModel = viewModel(factory = ExplorerViewModel.factory(appContext))
+    val state by viewModel.uiState.collectAsStateWithLifecycle()
+    ExplorerContent(
+        state = state,
+        onEvent = viewModel::onEvent,
+        onOpenApk = onOpenApk,
+        onOpenText = onOpenText,
+    )
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun ExplorerContent(
+    state: ExplorerUiState,
+    onEvent: (ExplorerEvent) -> Unit,
+    onOpenApk: (StorageRef) -> Unit,
+    onOpenText: (StorageRef, String) -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    // SAF folder picker. The OS shows the system document UI; the result is a
+    // tree Uri we translate into a StorageRef. We request no runtime storage
+    // permission — SAF grants per-Uri access instead.
+    val pickFolder = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.OpenDocumentTree(),
+    ) { uri: Uri? ->
+        if (uri != null) onEvent(ExplorerEvent.TreePicked(uri.toString()))
+    }
+
+    // Back closes search first, then navigates up within the folder tree.
+    BackHandler(enabled = state.isSearchActive || state.canNavigateUp) {
+        if (state.isSearchActive) onEvent(ExplorerEvent.ToggleSearch) else onEvent(ExplorerEvent.NavigateUp)
+    }
+
+    // Auto-focus the search field when it opens; hide the keyboard when it closes.
+    val searchFocus = remember { FocusRequester() }
+    val keyboard = LocalSoftwareKeyboardController.current
+    LaunchedEffect(state.isSearchActive) {
+        if (state.isSearchActive) searchFocus.requestFocus() else keyboard?.hide()
+    }
+
+    // Show one-shot messages (copy results) as a snackbar, then consume them so
+    // they don't re-appear on recomposition/rotation.
+    val snackbarHostState = remember { SnackbarHostState() }
+    LaunchedEffect(state.message) {
+        val msg = state.message
+        if (msg != null) {
+            snackbarHostState.showSnackbar(msg)
+            onEvent(ExplorerEvent.ConsumeMessage)
+        }
+    }
+
+    Scaffold(
+        modifier = modifier,
+        snackbarHost = { SnackbarHost(snackbarHostState) },
+        topBar = {
+            TopAppBar(
+                title = {
+                    if (state.isSearchActive) {
+                        TextField(
+                            value = state.searchQuery,
+                            onValueChange = { onEvent(ExplorerEvent.SetSearchQuery(it)) },
+                            placeholder = { Text("Search this folder") },
+                            singleLine = true,
+                            colors = TextFieldDefaults.colors(
+                                focusedContainerColor = Color.Transparent,
+                                unfocusedContainerColor = Color.Transparent,
+                                focusedIndicatorColor = Color.Transparent,
+                                unfocusedIndicatorColor = Color.Transparent,
+                            ),
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .focusRequester(searchFocus),
+                        )
+                    } else {
+                        Text(
+                            text = state.current?.name ?: stringResource(R.string.explorer_title),
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
+                        )
+                    }
+                },
+                navigationIcon = {
+                    when {
+                        state.isSearchActive -> IconButton(onClick = { onEvent(ExplorerEvent.ToggleSearch) }) {
+                            Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Close search")
+                        }
+                        state.canNavigateUp -> IconButton(onClick = { onEvent(ExplorerEvent.NavigateUp) }) {
+                            Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Up")
+                        }
+                    }
+                },
+                actions = {
+                    if (state.hasRoot && !state.isSearchActive) {
+                        IconButton(onClick = { onEvent(ExplorerEvent.ToggleSearch) }) {
+                            Icon(Icons.Outlined.Search, contentDescription = "Search")
+                        }
+                    }
+                    IconButton(onClick = { pickFolder.launch(null) }) {
+                        Icon(Icons.Outlined.FolderOpen, contentDescription = "Pick a folder")
+                    }
+                },
+            )
+        },
+    ) { padding ->
+        Column(
+            modifier = Modifier
+                .padding(padding)
+                .fillMaxSize(),
+        ) {
+            ZoneBanner(
+                zone = state.zone,
+                modifier = Modifier.padding(start = 16.dp, top = 4.dp, bottom = 4.dp),
+            )
+            if (state.hasRoot && state.breadcrumb.isNotEmpty()) {
+                BreadcrumbRow(
+                    crumbs = state.breadcrumb,
+                    onCrumbClick = { onEvent(ExplorerEvent.NavigateToCrumb(it)) },
+                )
+            }
+
+            Box(modifier = Modifier.fillMaxSize()) {
+                when {
+                    !state.hasRoot -> NoRootContent(
+                        recents = state.recents,
+                        onPick = { pickFolder.launch(null) },
+                        onOpenRecent = { onEvent(ExplorerEvent.OpenRecent(it)) },
+                        onRemoveRecent = { onEvent(ExplorerEvent.RemoveRecent(it)) },
+                    )
+                    state.isLoading && state.entries.isEmpty() -> LoadingState()
+                    state.errorMessage != null -> ErrorState(
+                        message = state.errorMessage,
+                        onRetry = { onEvent(ExplorerEvent.Retry) },
+                    )
+                    state.isEmptyFolder -> EmptyState(
+                        icon = Icons.Outlined.FolderOff,
+                        title = "Empty folder",
+                        description = "There's nothing to show in this folder.",
+                    )
+                    state.isNoMatches -> EmptyState(
+                        icon = Icons.Outlined.SearchOff,
+                        title = "No matches",
+                        description = "No items match \"${state.searchQuery}\".",
+                    )
+                    else -> FileList(
+                        entries = state.visibleEntries,
+                        onEvent = onEvent,
+                        onOpenApk = onOpenApk,
+                        onOpenText = onOpenText,
+                    )
+                }
+
+                // A slim top progress bar for refreshes that keep existing content.
+                if (state.isLoading && state.entries.isNotEmpty()) {
+                    LinearProgressIndicator(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .align(Alignment.TopCenter),
+                    )
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun FileList(
+    entries: List<FileNode>,
+    onEvent: (ExplorerEvent) -> Unit,
+    onOpenApk: (StorageRef) -> Unit,
+    onOpenText: (StorageRef, String) -> Unit,
+) {
+    LazyColumn(modifier = Modifier.fillMaxSize()) {
+        items(items = entries, key = { it.ref.raw }) { node ->
+            FileRow(
+                node = node,
+                onClick = {
+                    when {
+                        node.isDirectory -> onEvent(ExplorerEvent.OpenFolder(node))
+                        node.category == FileCategory.Apk -> onOpenApk(node.ref)
+                        node.category == FileCategory.Text -> onOpenText(node.ref, node.name)
+                        else -> onEvent(ExplorerEvent.OpenFile(node))
+                    }
+                },
+                // Files (not folders) get a "copy into Workspace" action — the
+                // read System zone's bridge into the writable sandbox.
+                trailingContent = if (!node.isDirectory) {
+                    {
+                        IconButton(onClick = { onEvent(ExplorerEvent.CopyToWorkspace(node)) }) {
+                            Icon(
+                                imageVector = Icons.Outlined.MoveToInbox,
+                                contentDescription = "Copy to Workspace",
+                            )
+                        }
+                    }
+                } else {
+                    null
+                },
+            )
+        }
+    }
+}
+
+@Composable
+private fun BreadcrumbRow(
+    crumbs: List<Crumb>,
+    onCrumbClick: (Int) -> Unit,
+) {
+    LazyRow(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 12.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        itemsIndexed(crumbs, key = { _, c -> c.ref.raw }) { index, crumb ->
+            if (index > 0) {
+                Text(
+                    text = "  /  ",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+            val isLast = index == crumbs.lastIndex
+            Text(
+                text = crumb.name,
+                style = MaterialTheme.typography.bodyMedium,
+                color = if (isLast) MaterialTheme.colorScheme.primary
+                else MaterialTheme.colorScheme.onSurfaceVariant,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+                modifier = Modifier
+                    .clickable(enabled = !isLast) { onCrumbClick(index) }
+                    .padding(vertical = 10.dp, horizontal = 2.dp),
+            )
+        }
+    }
+}
+
+@Composable
+private fun NoRootContent(
+    recents: List<RecentLocation>,
+    onPick: () -> Unit,
+    onOpenRecent: (RecentLocation) -> Unit,
+    onRemoveRecent: (RecentLocation) -> Unit,
+) {
+    if (recents.isEmpty()) {
+        EmptyState(
+            icon = Icons.Outlined.FolderOpen,
+            title = stringResource(R.string.explorer_empty_title),
+            description = stringResource(R.string.explorer_empty_desc),
+            action = {
+                Button(onClick = onPick) {
+                    Icon(Icons.Filled.CreateNewFolder, contentDescription = null)
+                    Text(text = "Choose a folder", modifier = Modifier.padding(start = 8.dp))
+                }
+            },
+        )
+        return
+    }
+
+    Column(modifier = Modifier.fillMaxSize()) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 16.dp, vertical = 8.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.SpaceBetween,
+        ) {
+            Text("Recent", style = MaterialTheme.typography.titleMedium)
+            TextButton(onClick = onPick) {
+                Icon(Icons.Outlined.FolderOpen, contentDescription = null)
+                Text(text = "Choose folder", modifier = Modifier.padding(start = 8.dp))
+            }
+        }
+        LazyColumn(modifier = Modifier.fillMaxSize()) {
+            items(items = recents, key = { it.ref.raw }) { recent ->
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clickable { onOpenRecent(recent) }
+                        .padding(horizontal = 16.dp, vertical = 12.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Icon(
+                        imageVector = Icons.Outlined.History,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                    Text(
+                        text = recent.label,
+                        style = MaterialTheme.typography.bodyLarge,
+                        color = MaterialTheme.colorScheme.onSurface,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                        modifier = Modifier
+                            .weight(1f)
+                            .padding(start = 16.dp),
+                    )
+                    IconButton(onClick = { onRemoveRecent(recent) }) {
+                        Icon(Icons.Filled.Close, contentDescription = "Remove from recents")
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun ErrorState(message: String, onRetry: () -> Unit) {
+    EmptyState(
+        icon = Icons.Outlined.ErrorOutline,
+        title = "Something went wrong",
+        description = message,
+        action = { Button(onClick = onRetry) { Text("Try again") } },
+    )
+}
+
+@Composable
+private fun LoadingState() {
+    Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+        CircularProgressIndicator()
+    }
+}

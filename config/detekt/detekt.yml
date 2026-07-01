@@ -1,0 +1,49 @@
+# DevExplorer detekt configuration.
+#
+# buildUponDefaultConfig = true (see the root build file) merges this on top of
+# detekt's bundled defaults, so only deltas live here. Thresholds are tuned for
+# a Compose + multi-module codebase; the goal is high-signal findings, not
+# style nitpicking (ktlint/formatting rules stay off).
+
+build:
+  maxIssues: 0
+  excludeCorrectable: false
+
+config:
+  validation: true
+  warningsAsErrors: false
+
+complexity:
+  LongMethod:
+    # Compose screen functions legitimately run long; keep the guard generous.
+    threshold: 120
+  LongParameterList:
+    functionThreshold: 8
+    constructorThreshold: 10
+  TooManyFunctions:
+    # A screen file naturally hosts many small @Composable helpers.
+    thresholdInFiles: 30
+    thresholdInClasses: 30
+    thresholdInInterfaces: 30
+    ignoreAnnotatedFunctions: ['Composable']
+  CyclomaticComplexMethod:
+    threshold: 20
+
+style:
+  MagicNumber:
+    # UI code is full of legitimate literals (dp, colors, weights).
+    active: false
+  ReturnCount:
+    max: 4
+  UnusedPrivateMember:
+    # @Preview / @Composable helpers are invoked by the Compose tooling.
+    ignoreAnnotated: ['Composable', 'Preview']
+  FunctionOnlyReturningConstant:
+    active: false
+
+naming:
+  FunctionNaming:
+    # @Composable functions are PascalCase by convention.
+    ignoreAnnotated: ['Composable']
+  TopLevelPropertyNaming:
+    active: true

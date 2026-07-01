@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <!--
+      QUERY_ALL_PACKAGES is required (Android 11 / API 30+) to enumerate every
+      installed package. Package visibility was tightened in API 30: without this,
+      getInstalledPackages() returns only a filtered subset. A "packages explorer"
+      legitimately needs the full list. It's declared here (in the packages data
+      module) so the requirement is co-located with the code that needs it; the
+      manifest merger folds it into the app.
+
+      Note: Google Play restricts this permission to apps whose core purpose needs
+      it. That's fine for a personal/learning build; a Play release would either
+      justify it or use a <queries> element for targeted visibility instead.
+    -->
+    <uses-permission android:name="android.permission.QUERY_ALL_PACKAGES" />
+
+</manifest>
