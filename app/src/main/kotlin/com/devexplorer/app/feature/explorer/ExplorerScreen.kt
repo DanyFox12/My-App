@@ -5,8 +5,10 @@ import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
@@ -16,10 +18,12 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.CreateNewFolder
 import androidx.compose.material.icons.outlined.ErrorOutline
 import androidx.compose.material.icons.outlined.FolderOff
 import androidx.compose.material.icons.outlined.FolderOpen
+import androidx.compose.material.icons.outlined.History
 import androidx.compose.material.icons.outlined.MoveToInbox
 import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
@@ -32,6 +36,7 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -51,6 +56,7 @@ import com.devexplorer.core.designsystem.component.FileRow
 import com.devexplorer.core.designsystem.component.ZoneBanner
 import com.devexplorer.core.model.FileCategory
 import com.devexplorer.core.model.FileNode
+import com.devexplorer.core.model.RecentLocation
 import com.devexplorer.core.model.StorageRef
 
 /**
@@ -151,7 +157,12 @@ private fun ExplorerContent(
 
             Box(modifier = Modifier.fillMaxSize()) {
                 when {
-                    !state.hasRoot -> NoRootState(onPick = { pickFolder.launch(null) })
+                    !state.hasRoot -> NoRootContent(
+                        recents = state.recents,
+                        onPick = { pickFolder.launch(null) },
+                        onOpenRecent = { onEvent(ExplorerEvent.OpenRecent(it)) },
+                        onRemoveRecent = { onEvent(ExplorerEvent.RemoveRecent(it)) },
+                    )
                     state.isLoading && state.entries.isEmpty() -> LoadingState()
                     state.errorMessage != null -> ErrorState(
                         message = state.errorMessage,
@@ -257,21 +268,72 @@ private fun BreadcrumbRow(
 }
 
 @Composable
-private fun NoRootState(onPick: () -> Unit) {
-    EmptyState(
-        icon = Icons.Outlined.FolderOpen,
-        title = stringResource(R.string.explorer_empty_title),
-        description = stringResource(R.string.explorer_empty_desc),
-        action = {
-            Button(onClick = onPick) {
-                Icon(Icons.Filled.CreateNewFolder, contentDescription = null)
-                Text(
-                    text = "Choose a folder",
-                    modifier = Modifier.padding(start = 8.dp),
-                )
+private fun NoRootContent(
+    recents: List<RecentLocation>,
+    onPick: () -> Unit,
+    onOpenRecent: (RecentLocation) -> Unit,
+    onRemoveRecent: (RecentLocation) -> Unit,
+) {
+    if (recents.isEmpty()) {
+        EmptyState(
+            icon = Icons.Outlined.FolderOpen,
+            title = stringResource(R.string.explorer_empty_title),
+            description = stringResource(R.string.explorer_empty_desc),
+            action = {
+                Button(onClick = onPick) {
+                    Icon(Icons.Filled.CreateNewFolder, contentDescription = null)
+                    Text(text = "Choose a folder", modifier = Modifier.padding(start = 8.dp))
+                }
+            },
+        )
+        return
+    }
+
+    Column(modifier = Modifier.fillMaxSize()) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 16.dp, vertical = 8.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.SpaceBetween,
+        ) {
+            Text("Recent", style = MaterialTheme.typography.titleMedium)
+            TextButton(onClick = onPick) {
+                Icon(Icons.Outlined.FolderOpen, contentDescription = null)
+                Text(text = "Choose folder", modifier = Modifier.padding(start = 8.dp))
             }
-        },
-    )
+        }
+        LazyColumn(modifier = Modifier.fillMaxSize()) {
+            items(items = recents, key = { it.ref.raw }) { recent ->
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clickable { onOpenRecent(recent) }
+                        .padding(horizontal = 16.dp, vertical = 12.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Icon(
+                        imageVector = Icons.Outlined.History,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                    Text(
+                        text = recent.label,
+                        style = MaterialTheme.typography.bodyLarge,
+                        color = MaterialTheme.colorScheme.onSurface,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                        modifier = Modifier
+                            .weight(1f)
+                            .padding(start = 16.dp),
+                    )
+                    IconButton(onClick = { onRemoveRecent(recent) }) {
+                        Icon(Icons.Filled.Close, contentDescription = "Remove from recents")
+                    }
+                }
+            }
+        }
+    }
 }
 
 @Composable

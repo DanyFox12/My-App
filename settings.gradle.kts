@@ -37,3 +37,6 @@ include(":data:workspace")
 include(":data:apk")
 // M5 adds read-only PackageManager inspection.
 include(":data:packages")
+// M9 adds local persistence (Room) and background work (WorkManager).
+include(":data:db")
+include(":data:work")

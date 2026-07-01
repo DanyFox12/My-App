@@ -1,11 +1,16 @@
 package com.devexplorer.app
 
 import android.app.Application
+import com.devexplorer.data.work.WorkScheduler
 
 /**
- * Application entry point. Intentionally minimal for now — it exists so we have
- * a stable process-level hook for later milestones (DI graph root, WorkManager
- * configuration, strict-mode in debug, etc.). Declared in the manifest via
- * android:name=".DevExplorerApplication".
+ * Application entry point. Schedules the app's periodic background work once at
+ * process start. Declared in the manifest via android:name=".DevExplorerApplication".
  */
-class DevExplorerApplication : Application()
+class DevExplorerApplication : Application() {
+    override fun onCreate() {
+        super.onCreate()
+        // Idempotent (ExistingPeriodicWorkPolicy.KEEP) — safe to call every launch.
+        WorkScheduler.schedulePeriodicCleanup(this)
+    }
+}

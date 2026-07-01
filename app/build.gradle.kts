@@ -63,6 +63,8 @@ dependencies {
     implementation(project(":data:workspace"))
     implementation(project(":data:apk"))
     implementation(project(":data:packages"))
+    implementation(project(":data:db"))
+    implementation(project(":data:work"))
 
     implementation(libs.androidx.core.ktx)
     implementation(libs.bundles.lifecycle)

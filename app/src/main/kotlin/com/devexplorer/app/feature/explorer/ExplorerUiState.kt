@@ -1,6 +1,7 @@
 package com.devexplorer.app.feature.explorer
 
 import com.devexplorer.core.model.FileNode
+import com.devexplorer.core.model.RecentLocation
 import com.devexplorer.core.model.StorageRef
 import com.devexplorer.core.model.Zone
 
@@ -23,6 +24,8 @@ data class ExplorerUiState(
     val errorMessage: String? = null,
     /** Transient one-shot text for a snackbar (e.g. "Copied to Workspace"). */
     val message: String? = null,
+    /** Recently opened folders, offered for one-tap reopen when no root is set. */
+    val recents: List<RecentLocation> = emptyList(),
 ) {
     /** The folder currently being shown, or null before a root is picked. */
     val current: Crumb? get() = breadcrumb.lastOrNull()
@@ -41,6 +44,8 @@ sealed interface ExplorerEvent {
     data class OpenFolder(val node: FileNode) : ExplorerEvent
     data class OpenFile(val node: FileNode) : ExplorerEvent
     data class CopyToWorkspace(val node: FileNode) : ExplorerEvent
+    data class OpenRecent(val recent: RecentLocation) : ExplorerEvent
+    data class RemoveRecent(val recent: RecentLocation) : ExplorerEvent
     data class NavigateToCrumb(val index: Int) : ExplorerEvent
     data object NavigateUp : ExplorerEvent
     data object Retry : ExplorerEvent

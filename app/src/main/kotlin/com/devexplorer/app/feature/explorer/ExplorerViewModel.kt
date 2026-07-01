@@ -7,14 +7,21 @@ import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
 import com.devexplorer.core.model.FileNode
+import com.devexplorer.core.model.RecentLocation
 import com.devexplorer.core.usecase.CopyIntoWorkspaceUseCase
 import com.devexplorer.core.usecase.ListDirectoryUseCase
+import com.devexplorer.core.usecase.ObserveRecentLocationsUseCase
 import com.devexplorer.core.usecase.OpenDocumentTreeUseCase
+import com.devexplorer.core.usecase.RecordRecentLocationUseCase
+import com.devexplorer.core.usecase.RemoveRecentLocationUseCase
+import com.devexplorer.data.db.DbModule
 import com.devexplorer.data.storage.SafStorageRepository
 import com.devexplorer.data.workspace.WorkspaceModule
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.launchIn
+import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
@@ -32,10 +39,20 @@ class ExplorerViewModel(
     private val openDocumentTree: OpenDocumentTreeUseCase,
     private val listDirectory: ListDirectoryUseCase,
     private val copyIntoWorkspace: CopyIntoWorkspaceUseCase,
+    private val observeRecents: ObserveRecentLocationsUseCase,
+    private val recordRecent: RecordRecentLocationUseCase,
+    private val removeRecent: RemoveRecentLocationUseCase,
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(ExplorerUiState())
     val uiState: StateFlow<ExplorerUiState> = _uiState.asStateFlow()
+
+    init {
+        // Reactive recents: Room re-emits whenever the history changes.
+        observeRecents()
+            .onEach { recents -> _uiState.update { it.copy(recents = recents) } }
+            .launchIn(viewModelScope)
+    }
 
     fun onEvent(event: ExplorerEvent) {
         when (event) {
@@ -43,6 +60,8 @@ class ExplorerViewModel(
             is ExplorerEvent.OpenFolder -> onOpenFolder(event.node)
             is ExplorerEvent.OpenFile -> onOpenFile(event.node)
             is ExplorerEvent.CopyToWorkspace -> onCopyToWorkspace(event.node)
+            is ExplorerEvent.OpenRecent -> onOpenRecent(event.recent)
+            is ExplorerEvent.RemoveRecent -> viewModelScope.launch { removeRecent(event.recent.ref) }
             is ExplorerEvent.NavigateToCrumb -> onNavigateToCrumb(event.index)
             ExplorerEvent.NavigateUp -> onNavigateUp()
             ExplorerEvent.Retry -> loadCurrent()
@@ -75,6 +94,7 @@ class ExplorerViewModel(
                             breadcrumb = listOf(Crumb(root.ref, root.displayName)),
                         )
                     }
+                    recordRecent(root.ref, root.displayName)
                     loadCurrent()
                 }
                 .onFailure { e ->
@@ -83,6 +103,19 @@ class ExplorerViewModel(
                     }
                 }
         }
+    }
+
+    private fun onOpenRecent(recent: RecentLocation) {
+        _uiState.update {
+            it.copy(
+                hasRoot = true,
+                breadcrumb = listOf(Crumb(recent.ref, recent.label)),
+                errorMessage = null,
+            )
+        }
+        // Bump its timestamp so reopening moves it to the top of the history.
+        viewModelScope.launch { recordRecent(recent.ref, recent.label) }
+        loadCurrent()
     }
 
     private fun onOpenFolder(node: FileNode) {
@@ -138,10 +171,14 @@ class ExplorerViewModel(
                 // The write token is minted here (only :data:workspace can) and
                 // handed to the copy use-case; read paths never receive one.
                 val writeToken = WorkspaceModule.writeCapability()
+                val recents = DbModule.recentLocationsRepository(appContext)
                 ExplorerViewModel(
                     openDocumentTree = OpenDocumentTreeUseCase(storage),
                     listDirectory = ListDirectoryUseCase(storage),
                     copyIntoWorkspace = CopyIntoWorkspaceUseCase(storage, workspace, writeToken),
+                    observeRecents = ObserveRecentLocationsUseCase(recents),
+                    recordRecent = RecordRecentLocationUseCase(recents),
+                    removeRecent = RemoveRecentLocationUseCase(recents),
                 )
             }
         }
