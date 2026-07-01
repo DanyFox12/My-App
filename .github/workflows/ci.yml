@@ -43,6 +43,18 @@ jobs:
       - name: Assemble release APK (R8)
         run: ./gradlew assembleRelease --stacktrace
 
+      # The installable build: the debug APK is signed with the auto-generated
+      # debug key, so it can be downloaded from the run's Artifacts and
+      # sideloaded onto a device. (The release APK is unsigned until a keystore
+      # is configured — see the README — so it isn't published here.)
+      - name: Upload debug APK
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: devexplorer-debug-apk
+          path: app/build/outputs/apk/debug/*.apk
+          if-no-files-found: warn
+
       - name: Upload lint & test reports
         if: always()
         uses: actions/upload-artifact@v4
