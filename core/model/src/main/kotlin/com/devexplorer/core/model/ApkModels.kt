@@ -28,6 +28,8 @@ data class ApkSummary(
     val signingInfo: SigningInfo?,
     val totalUncompressedBytes: Long,
     val totalCompressedBytes: Long,
+    /** Decoded AndroidManifest.xml tree (from our own binary-XML decoder), if present. */
+    val manifest: XmlNode? = null,
 ) {
     /** True when the platform parser recognized this as an installable package. */
     val isValidPackage: Boolean get() = packageName != null

@@ -8,7 +8,9 @@ import com.devexplorer.core.capability.ApkRepository
 import com.devexplorer.core.capability.ReadCapability
 import com.devexplorer.core.model.ApkSummary
 import com.devexplorer.core.model.ArchiveEntry
+import com.devexplorer.core.model.BinaryXml
 import com.devexplorer.core.model.CompressionMethod
+import com.devexplorer.core.model.XmlNode
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -47,7 +49,8 @@ class ApkFileRepository(
             FileOutputStream(temp).use { output -> input.copyTo(output) }
             val entries = readEntries(temp)
             val packageInfo = readPackageInfo(temp)
-            buildSummary(temp, entries, packageInfo)
+            val manifest = readManifest(temp)
+            buildSummary(temp, entries, packageInfo, manifest)
         } finally {
             temp.delete()
         }
@@ -71,6 +74,15 @@ class ApkFileRepository(
             result
         }
 
+    /** Read AndroidManifest.xml bytes and decode them with our binary-XML decoder. */
+    private fun readManifest(file: File): XmlNode? = runCatching {
+        ZipFile(file).use { zip ->
+            val entry = zip.getEntry("AndroidManifest.xml") ?: return null
+            val bytes = zip.getInputStream(entry).use { it.readBytes() }
+            BinaryXml.decode(bytes)
+        }
+    }.getOrNull()
+
     /** Ask the platform to parse the archive as a package (null if it isn't one). */
     private fun readPackageInfo(file: File): PackageInfo? {
         val pm = appContext.packageManager
@@ -92,6 +104,7 @@ class ApkFileRepository(
         file: File,
         entries: List<ArchiveEntry>,
         info: PackageInfo?,
+        manifest: XmlNode?,
     ): ApkSummary {
         val appInfo = info?.applicationInfo
         val label = runCatching { appInfo?.loadLabel(appContext.packageManager)?.toString() }
@@ -123,6 +136,7 @@ class ApkFileRepository(
             signingInfo = signingInfo,
             totalUncompressedBytes = entries.sumOf { it.sizeBytes },
             totalCompressedBytes = entries.sumOf { it.compressedSizeBytes },
+            manifest = manifest,
         )
     }
 

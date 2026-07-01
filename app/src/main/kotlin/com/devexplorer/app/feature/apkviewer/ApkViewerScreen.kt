@@ -69,6 +69,7 @@ import com.devexplorer.core.model.CertificateInfo
 import com.devexplorer.core.model.CompressionMethod
 import com.devexplorer.core.model.SigningInfo
 import com.devexplorer.core.model.StorageRef
+import com.devexplorer.core.model.XmlNode
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -131,7 +132,7 @@ private fun ApkViewerContent(
 @Composable
 private fun ApkTabs(summary: ApkSummary) {
     var tab by rememberSaveable { mutableIntStateOf(0) }
-    val titles = listOf("Overview", "X-ray", "Permissions", "Signature", "Resources", "Contents")
+    val titles = listOf("Overview", "X-ray", "Manifest", "Permissions", "Signature", "Resources", "Contents")
 
     Column(modifier = Modifier.fillMaxSize()) {
         ScrollableTabRow(selectedTabIndex = tab, edgePadding = 0.dp) {
@@ -146,10 +147,53 @@ private fun ApkTabs(summary: ApkSummary) {
         when (tab) {
             0 -> OverviewTab(summary)
             1 -> XrayTab(summary.entries)
-            2 -> PermissionsTab(summary.permissions)
-            3 -> SignatureTab(summary.signingInfo)
-            4 -> ResourcesTab(summary.entries)
+            2 -> ManifestTab(summary.manifest)
+            3 -> PermissionsTab(summary.permissions)
+            4 -> SignatureTab(summary.signingInfo)
+            5 -> ResourcesTab(summary.entries)
             else -> ContentsTab(summary.entries)
+        }
+    }
+}
+
+private data class ManifestLine(val depth: Int, val text: String, val isElement: Boolean)
+
+private fun flattenManifest(node: XmlNode, depth: Int, out: MutableList<ManifestLine>) {
+    out += ManifestLine(depth, "<${node.name}>", isElement = true)
+    node.attributes.forEach { out += ManifestLine(depth + 1, "${it.name} = ${it.value}", isElement = false) }
+    node.children.forEach { flattenManifest(it, depth + 1, out) }
+}
+
+@Composable
+private fun ManifestTab(manifest: XmlNode?) {
+    if (manifest == null) {
+        EmptyState(
+            icon = Icons.Outlined.ErrorOutline,
+            title = "No manifest",
+            description = "Couldn't decode AndroidManifest.xml from this archive.",
+        )
+        return
+    }
+    val lines = remember(manifest) {
+        buildList { flattenManifest(manifest, 0, this) }
+    }
+    LazyColumn(modifier = Modifier.fillMaxSize()) {
+        items(count = lines.size) { index ->
+            val line = lines[index]
+            Text(
+                text = line.text,
+                style = MaterialTheme.typography.bodySmall.copy(fontFamily = FontFamily.Monospace),
+                color = if (line.isElement) MaterialTheme.colorScheme.primary
+                else MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(
+                        start = (12 + line.depth * 14).dp,
+                        end = 12.dp,
+                        top = 2.dp,
+                        bottom = 2.dp,
+                    ),
+            )
         }
     }
 }
