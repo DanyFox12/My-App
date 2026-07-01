@@ -74,8 +74,12 @@ class ApkFileRepository(
     /** Ask the platform to parse the archive as a package (null if it isn't one). */
     private fun readPackageInfo(file: File): PackageInfo? {
         val pm = appContext.packageManager
+        // Request permissions AND the signing certificates in one parse.
+        val signingFlag =
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) PackageManager.GET_SIGNING_CERTIFICATES
+            else @Suppress("DEPRECATION") PackageManager.GET_SIGNATURES
         @Suppress("DEPRECATION")
-        val info = pm.getPackageArchiveInfo(file.path, PackageManager.GET_PERMISSIONS)
+        val info = pm.getPackageArchiveInfo(file.path, PackageManager.GET_PERMISSIONS or signingFlag)
         // loadLabel needs the app's source paths pointed at the archive.
         info?.applicationInfo?.apply {
             sourceDir = file.path
@@ -98,6 +102,7 @@ class ApkFileRepository(
         val signatureFiles = entries
             .filter { !it.isDirectory && it.name.startsWith("META-INF/") && it.name.isSignatureFile() }
             .map { it.name }
+        val signingInfo = info?.let { SignatureExtractor.extract(it, signatureFiles.isNotEmpty()) }
 
         return ApkSummary(
             packageName = info?.packageName,
@@ -115,6 +120,7 @@ class ApkFileRepository(
             hasResourcesArsc = entries.any { it.name == "resources.arsc" },
             hasBinaryManifest = entries.any { it.name == "AndroidManifest.xml" },
             signatureFiles = signatureFiles,
+            signingInfo = signingInfo,
             totalUncompressedBytes = entries.sumOf { it.sizeBytes },
             totalCompressedBytes = entries.sumOf { it.compressedSizeBytes },
         )

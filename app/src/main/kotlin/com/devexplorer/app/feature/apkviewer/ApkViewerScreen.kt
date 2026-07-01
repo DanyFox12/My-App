@@ -15,6 +15,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.outlined.ErrorOutline
 import androidx.compose.material.icons.outlined.Key
+import androidx.compose.material.icons.outlined.VerifiedUser
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ElevatedCard
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -23,9 +24,9 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.ScrollableTabRow
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Tab
-import androidx.compose.material3.TabRow
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
@@ -46,8 +47,13 @@ import com.devexplorer.core.designsystem.component.EmptyState
 import com.devexplorer.core.designsystem.util.formatBytes
 import com.devexplorer.core.model.ApkSummary
 import com.devexplorer.core.model.ArchiveEntry
+import com.devexplorer.core.model.CertificateInfo
 import com.devexplorer.core.model.CompressionMethod
+import com.devexplorer.core.model.SigningInfo
 import com.devexplorer.core.model.StorageRef
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
 
 @Composable
 fun ApkViewerScreen(
@@ -107,10 +113,10 @@ private fun ApkViewerContent(
 @Composable
 private fun ApkTabs(summary: ApkSummary) {
     var tab by rememberSaveable { mutableIntStateOf(0) }
-    val titles = listOf("Overview", "Permissions", "Contents")
+    val titles = listOf("Overview", "Permissions", "Signature", "Contents")
 
     Column(modifier = Modifier.fillMaxSize()) {
-        TabRow(selectedTabIndex = tab) {
+        ScrollableTabRow(selectedTabIndex = tab, edgePadding = 0.dp) {
             titles.forEachIndexed { index, label ->
                 Tab(
                     selected = tab == index,
@@ -122,10 +128,104 @@ private fun ApkTabs(summary: ApkSummary) {
         when (tab) {
             0 -> OverviewTab(summary)
             1 -> PermissionsTab(summary.permissions)
+            2 -> SignatureTab(summary.signingInfo)
             else -> ContentsTab(summary.entries)
         }
     }
 }
+
+@Composable
+private fun SignatureTab(signing: SigningInfo?) {
+    if (signing == null) {
+        EmptyState(
+            icon = Icons.Outlined.VerifiedUser,
+            title = "No signature",
+            description = "No signing certificate was found for this archive.",
+        )
+        return
+    }
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .verticalScroll(rememberScrollState())
+            .padding(16.dp),
+        verticalArrangement = Arrangement.spacedBy(12.dp),
+    ) {
+        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            SchemeChip("v1 (JAR)", signing.schemeV1)
+            if (signing.hasMultipleSigners) SchemeChip("multiple signers", true)
+        }
+        signing.certificates.forEachIndexed { index, cert ->
+            CertificateCard(index = index, total = signing.certificates.size, cert = cert)
+        }
+        Text(
+            text = "Fingerprints are SHA-256/SHA-1 of the certificate — the same values apksigner reports.",
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+    }
+}
+
+@Composable
+private fun CertificateCard(index: Int, total: Int, cert: CertificateInfo) {
+    ElevatedCard(modifier = Modifier.fillMaxWidth()) {
+        Column(modifier = Modifier.padding(vertical = 8.dp)) {
+            if (total > 1) {
+                Text(
+                    text = "Certificate ${index + 1} of $total",
+                    style = MaterialTheme.typography.labelMedium,
+                    color = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp),
+                )
+            }
+            InfoRow("Subject", cert.subject)
+            InfoRow("Issuer", if (cert.isSelfSigned) "self-signed" else cert.issuer)
+            InfoRow("Valid from", formatDate(cert.notBefore))
+            InfoRow("Valid until", formatDate(cert.notAfter))
+            InfoRow("Serial", cert.serialNumber)
+            InfoRow("Sig. algorithm", cert.signatureAlgorithm)
+            InfoRow("Key algorithm", cert.publicKeyAlgorithm)
+            Fingerprint("SHA-256", cert.sha256)
+            Fingerprint("SHA-1", cert.sha1)
+        }
+    }
+}
+
+@Composable
+private fun Fingerprint(label: String, value: String) {
+    Column(modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)) {
+        Text(
+            text = label,
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+        Text(
+            text = value,
+            style = MaterialTheme.typography.bodySmall.copy(fontFamily = FontFamily.Monospace),
+            color = MaterialTheme.colorScheme.onSurface,
+        )
+    }
+}
+
+@Composable
+private fun SchemeChip(label: String, enabled: Boolean) {
+    Surface(
+        color = if (enabled) MaterialTheme.colorScheme.primaryContainer
+        else MaterialTheme.colorScheme.surfaceVariant,
+        contentColor = if (enabled) MaterialTheme.colorScheme.onPrimaryContainer
+        else MaterialTheme.colorScheme.onSurfaceVariant,
+        shape = MaterialTheme.shapes.small,
+    ) {
+        Text(
+            text = label,
+            style = MaterialTheme.typography.labelSmall,
+            modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp),
+        )
+    }
+}
+
+private fun formatDate(millis: Long): String =
+    SimpleDateFormat("yyyy-MM-dd", Locale.US).format(Date(millis))
 
 @Composable
 private fun OverviewTab(summary: ApkSummary) {

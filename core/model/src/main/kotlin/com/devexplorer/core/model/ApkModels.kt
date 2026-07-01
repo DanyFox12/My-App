@@ -25,6 +25,7 @@ data class ApkSummary(
     val hasResourcesArsc: Boolean,
     val hasBinaryManifest: Boolean,
     val signatureFiles: List<String>,
+    val signingInfo: SigningInfo?,
     val totalUncompressedBytes: Long,
     val totalCompressedBytes: Long,
 ) {
