@@ -14,7 +14,8 @@ unless you turn it on.
   with a recent-folders history.
 - **APK Viewer** — open any APK (or installed app) and inspect it read-only:
   overview, permissions, **signing certificates & fingerprints**, resource
-  breakdown, and the raw ZIP contents.
+  breakdown, and the raw ZIP contents. Share a plain-text report of the
+  analysis straight from the toolbar.
 - **Packages** — list installed apps via `PackageManager`; tap one to analyze it
   in the same viewer.
 - **Workspace** — the app's *only* writable surface: an app-private sandbox you
@@ -71,6 +72,21 @@ Open in Android Studio (Ladybug or newer), or:
 
 Requires an Android SDK. The Gradle wrapper is pinned to 8.10.2; the build
 targets AGP 8.7.3 / Kotlin 2.1.0.
+
+## Continuous integration & code quality
+
+GitHub Actions ([`.github/workflows/ci.yml`](.github/workflows/ci.yml)) runs on
+every push to `main` and every pull request:
+
+- **Build & unit tests** — `./gradlew test assembleDebug`.
+- **Static analysis** — `./gradlew detekt` over the whole module graph, using
+  the shared config in [`config/detekt/detekt.yml`](config/detekt/detekt.yml).
+
+detekt is currently **advisory** (`ignoreFailures = true`): it publishes
+SARIF/HTML reports as build artifacts without failing CI, so it can be adopted
+on the existing code without a red pipeline. To make it blocking, commit a
+baseline (`./gradlew detektBaseline`) and set `ignoreFailures = false` in the
+root build file.
 
 ## Milestones & internals
 

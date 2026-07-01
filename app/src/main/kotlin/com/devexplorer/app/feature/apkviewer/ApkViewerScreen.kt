@@ -1,5 +1,7 @@
 package com.devexplorer.app.feature.apkviewer
 
+import android.content.Context
+import android.content.Intent
 import android.widget.Toast
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -22,6 +24,7 @@ import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.outlined.ErrorOutline
 import androidx.compose.material.icons.outlined.Key
 import androidx.compose.material.icons.outlined.Search
+import androidx.compose.material.icons.outlined.Share
 import androidx.compose.material.icons.outlined.VerifiedUser
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ElevatedCard
@@ -64,6 +67,7 @@ import com.devexplorer.core.designsystem.util.formatBytes
 import com.devexplorer.core.model.ApkPart
 import com.devexplorer.core.model.ApkSummary
 import com.devexplorer.core.model.apkComposition
+import com.devexplorer.core.model.buildApkReport
 import com.devexplorer.core.model.ArchiveEntry
 import com.devexplorer.core.model.CertificateInfo
 import com.devexplorer.core.model.CompressionMethod
@@ -86,6 +90,20 @@ fun ApkViewerScreen(
     ApkViewerContent(state = state, onBack = onBack, onRetry = viewModel::retry)
 }
 
+/**
+ * Fires a plain-text ACTION_SEND chooser with the analysis rendered by
+ * [buildApkReport]. Read-only: the source archive is never opened for writing.
+ */
+private fun shareApkReport(context: Context, summary: ApkSummary) {
+    val subject = (summary.appLabel ?: summary.packageName ?: "APK") + " — DevExplorer report"
+    val send = Intent(Intent.ACTION_SEND).apply {
+        type = "text/plain"
+        putExtra(Intent.EXTRA_SUBJECT, subject)
+        putExtra(Intent.EXTRA_TEXT, buildApkReport(summary))
+    }
+    context.startActivity(Intent.createChooser(send, "Share APK report"))
+}
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun ApkViewerContent(
@@ -95,6 +113,7 @@ private fun ApkViewerContent(
     modifier: Modifier = Modifier,
 ) {
     val title = state.summary?.appLabel ?: state.summary?.packageName ?: "APK"
+    val context = LocalContext.current
     Scaffold(
         modifier = modifier,
         topBar = {
@@ -103,6 +122,15 @@ private fun ApkViewerContent(
                 navigationIcon = {
                     IconButton(onClick = onBack) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
+                    }
+                },
+                actions = {
+                    // The report is a read-only text snapshot; sharing never
+                    // touches the source archive.
+                    state.summary?.let { summary ->
+                        IconButton(onClick = { shareApkReport(context, summary) }) {
+                            Icon(Icons.Outlined.Share, contentDescription = "Share report")
+                        }
                     }
                 },
             )
