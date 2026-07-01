@@ -30,6 +30,8 @@ data class ApkSummary(
     val totalCompressedBytes: Long,
     /** Decoded AndroidManifest.xml tree (from our own binary-XML decoder), if present. */
     val manifest: XmlNode? = null,
+    /** Parsed DEX header stats (method/class/field counts), if the DEX files were read. */
+    val dexStats: DexStats? = null,
 ) {
     /** True when the platform parser recognized this as an installable package. */
     val isValidPackage: Boolean get() = packageName != null

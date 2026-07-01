@@ -14,10 +14,14 @@ unless you turn it on.
   with a recent-folders history.
 - **APK Viewer** — open any APK (or installed app) and inspect it read-only:
   overview, permissions, **signing certificates & fingerprints**, resource
-  breakdown, and the raw ZIP contents. Share a plain-text report of the
-  analysis straight from the toolbar.
+  breakdown, **DEX method/class counts** (with a 64K-limit warning), and the raw
+  ZIP contents. Share a plain-text report of the analysis straight from the toolbar.
 - **Packages** — list installed apps via `PackageManager`; tap one to analyze it
   in the same viewer.
+- **Compare APKs** — pick two installed apps and diff them side-by-side:
+  version/SDK changes, size and composition deltas, DEX method growth, added/
+  removed permissions, and whether they share a signing certificate. Shareable as
+  a plain-text report.
 - **Workspace** — the app's *only* writable surface: an app-private sandbox you
   copy files into, with rename/delete.
 - **Code Viewer** — syntax-highlighted, read-only text/code viewing, with

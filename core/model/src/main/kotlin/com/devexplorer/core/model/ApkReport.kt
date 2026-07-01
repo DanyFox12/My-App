@@ -46,6 +46,22 @@ fun buildApkReport(summary: ApkSummary): String = buildString {
         appendLine()
     }
 
+    val dex = summary.dexStats
+    if (dex != null && dex.files.isNotEmpty()) {
+        appendLine("DEX (methods count toward the 65,536-per-file limit)")
+        row("  Methods", dex.totalMethods.toString())
+        row("  Classes", dex.totalClasses.toString())
+        row("  Fields", dex.totalFields.toString())
+        for (file in dex.files) {
+            append("  ").append(file.name).append(": ")
+                .append(file.methodIds.toString()).append(" methods, ")
+                .append(file.classDefs.toString()).append(" classes")
+            if (file.nearsMethodLimit) append("  [near 64K limit]")
+            append('\n')
+        }
+        appendLine()
+    }
+
     appendLine("Permissions (${summary.permissions.size})")
     if (summary.permissions.isEmpty()) {
         appendLine("  (none)")

@@ -13,6 +13,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Apps
+import androidx.compose.material.icons.outlined.Difference
 import androidx.compose.material.icons.outlined.ErrorOutline
 import androidx.compose.material.icons.outlined.Search
 import androidx.compose.material.icons.outlined.Shield
@@ -49,6 +50,7 @@ import com.devexplorer.core.model.Zone
 fun PackagesScreen(
     onOpenPackage: (String) -> Unit = {},
     onOpenPermissionUsage: () -> Unit = {},
+    onOpenCompare: () -> Unit = {},
 ) {
     val appContext = LocalContext.current.applicationContext
     val viewModel: PackagesViewModel = viewModel(factory = PackagesViewModel.factory(appContext))
@@ -58,6 +60,7 @@ fun PackagesScreen(
         onEvent = viewModel::onEvent,
         onOpenPackage = onOpenPackage,
         onOpenPermissionUsage = onOpenPermissionUsage,
+        onOpenCompare = onOpenCompare,
     )
 }
 
@@ -68,6 +71,7 @@ private fun PackagesContent(
     onEvent: (PackagesEvent) -> Unit,
     onOpenPackage: (String) -> Unit,
     onOpenPermissionUsage: () -> Unit,
+    onOpenCompare: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     Scaffold(
@@ -76,6 +80,9 @@ private fun PackagesContent(
             TopAppBar(
                 title = { Text(stringResource(R.string.packages_title)) },
                 actions = {
+                    IconButton(onClick = onOpenCompare) {
+                        Icon(Icons.Outlined.Difference, contentDescription = "Compare APKs")
+                    }
                     IconButton(onClick = onOpenPermissionUsage) {
                         Icon(Icons.Outlined.Shield, contentDescription = "Permission usage")
                     }

@@ -10,6 +10,7 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.toRoute
 import com.devexplorer.core.designsystem.performance.LocalPerformanceBudget
+import com.devexplorer.app.feature.apkcompare.ApkCompareScreen
 import com.devexplorer.app.feature.apkviewer.ApkViewerScreen
 import com.devexplorer.app.feature.codeviewer.CodeViewerScreen
 import com.devexplorer.app.feature.explorer.ExplorerScreen
@@ -55,6 +56,7 @@ fun AppNavHost(
             PackagesScreen(
                 onOpenPackage = { pkg -> openApk(StorageRef.installedPackage(pkg)) },
                 onOpenPermissionUsage = { navController.navigate(PermissionSearch) },
+                onOpenCompare = { navController.navigate(ApkCompare) },
             )
         }
         composable<Workspace> { WorkspaceScreen() }
@@ -79,6 +81,10 @@ fun AppNavHost(
 
         composable<PermissionSearch> {
             PermissionSearchScreen(onBack = { navController.popBackStack() })
+        }
+
+        composable<ApkCompare> {
+            ApkCompareScreen(onBack = { navController.popBackStack() })
         }
     }
 }

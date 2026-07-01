@@ -10,6 +10,8 @@ import com.devexplorer.core.model.ApkSummary
 import com.devexplorer.core.model.ArchiveEntry
 import com.devexplorer.core.model.BinaryXml
 import com.devexplorer.core.model.CompressionMethod
+import com.devexplorer.core.model.Dex
+import com.devexplorer.core.model.DexStats
 import com.devexplorer.core.model.XmlNode
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
@@ -50,7 +52,8 @@ class ApkFileRepository(
             val entries = readEntries(temp)
             val packageInfo = readPackageInfo(temp)
             val manifest = readManifest(temp)
-            buildSummary(temp, entries, packageInfo, manifest)
+            val dexStats = readDexStats(temp, entries)
+            buildSummary(temp, entries, packageInfo, manifest, dexStats)
         } finally {
             temp.delete()
         }
@@ -83,6 +86,37 @@ class ApkFileRepository(
         }
     }.getOrNull()
 
+    /**
+     * Parse each `classes*.dex` header for its method/class counts. Only the
+     * fixed 0x70-byte header is read per DEX (not the whole file), so this stays
+     * cheap even for large multidex apps. Returns null when there are no DEX
+     * files or none parse (fail-soft, matching the manifest decoder).
+     */
+    private fun readDexStats(file: File, entries: List<ArchiveEntry>): DexStats? {
+        val dexEntries = entries.filter { !it.isDirectory && DEX_REGEX.matches(it.name) }
+        if (dexEntries.isEmpty()) return null
+        val files = ZipFile(file).use { zip ->
+            dexEntries.mapNotNull { archiveEntry ->
+                val zipEntry = zip.getEntry(archiveEntry.name) ?: return@mapNotNull null
+                val header = zip.getInputStream(zipEntry).use { it.readAtMost(DEX_HEADER_BYTES) }
+                Dex.parseHeader(archiveEntry.name, header, archiveEntry.sizeBytes)
+            }
+        }.sortedBy { it.name }
+        return if (files.isEmpty()) null else DexStats(files)
+    }
+
+    /** Read up to [n] bytes, tolerating short reads from the deflate stream. */
+    private fun InputStream.readAtMost(n: Int): ByteArray {
+        val buffer = ByteArray(n)
+        var read = 0
+        while (read < n) {
+            val count = read(buffer, read, n - read)
+            if (count < 0) break
+            read += count
+        }
+        return if (read == n) buffer else buffer.copyOf(read)
+    }
+
     /** Ask the platform to parse the archive as a package (null if it isn't one). */
     private fun readPackageInfo(file: File): PackageInfo? {
         val pm = appContext.packageManager
@@ -105,6 +139,7 @@ class ApkFileRepository(
         entries: List<ArchiveEntry>,
         info: PackageInfo?,
         manifest: XmlNode?,
+        dexStats: DexStats?,
     ): ApkSummary {
         val appInfo = info?.applicationInfo
         val label = runCatching { appInfo?.loadLabel(appContext.packageManager)?.toString() }
@@ -137,6 +172,7 @@ class ApkFileRepository(
             totalUncompressedBytes = entries.sumOf { it.sizeBytes },
             totalCompressedBytes = entries.sumOf { it.compressedSizeBytes },
             manifest = manifest,
+            dexStats = dexStats,
         )
     }
 
@@ -159,5 +195,8 @@ class ApkFileRepository(
 
     private companion object {
         val DEX_REGEX = Regex("""classes\d*\.dex""")
+
+        /** Bytes of a DEX file header — all the count fields live within it. */
+        const val DEX_HEADER_BYTES = 0x70
     }
 }

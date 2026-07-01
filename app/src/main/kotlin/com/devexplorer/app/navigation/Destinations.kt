@@ -45,6 +45,10 @@ data class CodeViewer(val refArg: String, val name: String)
 @Serializable
 data object PermissionSearch
 
+/** Detail destination: pick two installed apps and diff them (read-only). */
+@Serializable
+data object ApkCompare
+
 /**
  * The four top-level destinations shown in the bottom navigation bar. Each pairs
  * a type-safe route with its label and selected/unselected icons.

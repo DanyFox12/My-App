@@ -71,6 +71,7 @@ import com.devexplorer.core.model.buildApkReport
 import com.devexplorer.core.model.ArchiveEntry
 import com.devexplorer.core.model.CertificateInfo
 import com.devexplorer.core.model.CompressionMethod
+import com.devexplorer.core.model.DexStats
 import com.devexplorer.core.model.SigningInfo
 import com.devexplorer.core.model.StorageRef
 import com.devexplorer.core.model.XmlNode
@@ -547,6 +548,28 @@ private fun OverviewTab(summary: ApkSummary) {
                 InfoRow("Compressed", formatBytes(summary.totalCompressedBytes))
                 InfoRow("resources.arsc", if (summary.hasResourcesArsc) "present" else "absent")
                 InfoRow("Signature files", summary.signatureFiles.size.toString())
+            }
+        }
+        summary.dexStats?.let { dex ->
+            SectionTitle("DEX (methods count toward the 65,536-per-file limit)")
+            ElevatedCard(modifier = Modifier.fillMaxWidth()) {
+                Column(modifier = Modifier.padding(vertical = 8.dp)) {
+                    InfoRow("Methods", dex.totalMethods.toString())
+                    InfoRow("Classes", dex.totalClasses.toString())
+                    InfoRow("Fields", dex.totalFields.toString())
+                    dex.files.forEach { file ->
+                        InfoRow(file.name, "${file.methodIds} methods · ${file.classDefs} classes")
+                    }
+                    if (dex.nearsMethodLimit) {
+                        Text(
+                            text = "A DEX file is near the ${DexStats.METHOD_REF_LIMIT} method-reference " +
+                                "limit — adding code may force another DEX.",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.error,
+                            modifier = Modifier.padding(horizontal = 16.dp, vertical = 6.dp),
+                        )
+                    }
+                }
             }
         }
         Text(
