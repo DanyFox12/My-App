@@ -83,6 +83,41 @@ class SecurityAuditTest {
     }
 
     @Test
+    fun flags_implicitly_exported_components_when_target_predates_api_31() {
+        val manifest = node(
+            "manifest",
+            children = listOf(
+                node(
+                    "application",
+                    children = listOf(
+                        // No android:exported, but an intent-filter: exported by
+                        // default on targetSdk < 31.
+                        node(
+                            "activity",
+                            attrs = listOf("android:name" to ".Implicit"),
+                            children = listOf(node("intent-filter")),
+                        ),
+                        // Explicit opt-out wins over the intent-filter default.
+                        node(
+                            "receiver",
+                            attrs = listOf("android:name" to ".OptedOut", "android:exported" to "false"),
+                            children = listOf(node("intent-filter")),
+                        ),
+                        // No intent-filter and no attribute: never exported.
+                        node("service", attrs = listOf("android:name" to ".Plain")),
+                    ),
+                ),
+            ),
+        )
+        val old = securityAudit(summary(manifest, targetSdk = 30))
+        assertEquals(listOf(".Implicit"), old.find(SecurityCheck.ExportedComponents)!!.items)
+
+        // From targetSdk 31 the attribute is mandatory, so no implicit default.
+        val modern = securityAudit(summary(manifest, targetSdk = 31))
+        assertTrue(modern.find(SecurityCheck.ExportedComponents) == null)
+    }
+
+    @Test
     fun lists_dangerous_permissions_only() {
         val findings = securityAudit(
             summary(

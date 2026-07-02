@@ -1,12 +1,10 @@
 package com.devexplorer.core.usecase
 
 import com.devexplorer.core.capability.AnalysisHistoryRepository
-import com.devexplorer.core.model.AnalysisSnapshot
 import com.devexplorer.core.model.ApkSummary
 import com.devexplorer.core.model.SnapshotDelta
 import com.devexplorer.core.model.snapshotDelta
 import com.devexplorer.core.model.snapshotOf
-import kotlinx.coroutines.flow.Flow
 
 /**
  * Records the snapshot of a fresh analysis and answers "what changed since the
@@ -30,11 +28,4 @@ class TrackAnalysisUseCase(
             val baseline = history.latestOtherVersion(snapshot.packageName, snapshot.versionCode)
             snapshotDelta(baseline, snapshot)
         }
-}
-
-/** Reactive read of the recorded history, newest first. */
-class ObserveAnalysisHistoryUseCase(
-    private val history: AnalysisHistoryRepository,
-) {
-    operator fun invoke(): Flow<List<AnalysisSnapshot>> = history.observe()
 }

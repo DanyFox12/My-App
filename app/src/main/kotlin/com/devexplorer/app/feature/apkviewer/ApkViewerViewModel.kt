@@ -34,8 +34,10 @@ data class ApkViewerUiState(
     /** Per-package DEX tree — loaded on demand the first time the tab opens. */
     val dexPackages: DexPackageNode? = null,
     val isDexPackagesLoading: Boolean = false,
-    /** True once a DEX-tree load finished (even if it found no parseable DEX). */
+    /** True once a DEX-tree load succeeded (even if it found no parseable DEX). */
     val dexPackagesLoaded: Boolean = false,
+    /** True when the last DEX-tree load failed — the tab offers a retry. */
+    val dexPackagesFailed: Boolean = false,
     /** What changed vs. the previously recorded version of this package, if known. */
     val updateDelta: SnapshotDelta? = null,
 )
@@ -82,11 +84,20 @@ class ApkViewerViewModel(
         val state = _uiState.value
         if (state.isDexPackagesLoading || state.dexPackagesLoaded) return
         viewModelScope.launch {
-            _uiState.update { it.copy(isDexPackagesLoading = true) }
-            val tree = readDexPackages(sourceRef).getOrNull()
-            _uiState.update {
-                it.copy(dexPackages = tree, isDexPackagesLoading = false, dexPackagesLoaded = true)
-            }
+            _uiState.update { it.copy(isDexPackagesLoading = true, dexPackagesFailed = false) }
+            readDexPackages(sourceRef)
+                .onSuccess { tree ->
+                    _uiState.update {
+                        it.copy(dexPackages = tree, isDexPackagesLoading = false, dexPackagesLoaded = true)
+                    }
+                }
+                // Failure is not "no DEX": leave dexPackagesLoaded false so the
+                // tab can retry instead of pinning a wrong empty state.
+                .onFailure {
+                    _uiState.update {
+                        it.copy(isDexPackagesLoading = false, dexPackagesFailed = true)
+                    }
+                }
         }
     }
 

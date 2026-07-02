@@ -58,6 +58,28 @@ class DexPackagesTest {
     }
 
     @Test
+    fun mid_parse_failure_leaves_no_partial_counts_behind() {
+        val good = dex(classDescriptors = listOf("Lcom/good/Only;"), methodOwners = listOf(0))
+        // Valid header, but class_defs_size claims far more entries than the
+        // buffer holds: the class_defs loop counts a package, then reads out of
+        // bounds and throws. The whole file must be skipped, counts intact.
+        val bad = dex(classDescriptors = listOf("Lcom/bad/Polluter;"))
+        run { // patch class_defs_size (offset 0x60) to a lying value
+            val v = 1_000_000
+            bad[0x60] = (v and 0xFF).toByte()
+            bad[0x61] = ((v shr 8) and 0xFF).toByte()
+            bad[0x62] = ((v shr 16) and 0xFF).toByte()
+            bad[0x63] = ((v shr 24) and 0xFF).toByte()
+        }
+
+        val root = DexPackages.parse(listOf(good, bad))!!
+
+        assertEquals(1, root.totalClasses)
+        val com = root.children.single { it.name == "com" }
+        assertEquals(listOf("good"), com.children.map { it.name })
+    }
+
+    @Test
     fun builds_a_package_tree_with_class_and_method_counts() {
         val bytes = dex(
             classDescriptors = listOf(

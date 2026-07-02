@@ -16,6 +16,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.CheckCircle
 import androidx.compose.material.icons.outlined.DataArray
+import androidx.compose.material.icons.outlined.ErrorOutline
 import androidx.compose.material.icons.outlined.ExpandLess
 import androidx.compose.material.icons.outlined.ExpandMore
 import androidx.compose.material.icons.outlined.Memory
@@ -28,6 +29,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -178,10 +180,23 @@ private fun SecurityCheck.explanation(): String = when (this) {
 internal fun DexPackagesTab(
     root: DexPackageNode?,
     isLoading: Boolean,
+    loaded: Boolean,
+    failed: Boolean,
     onLoad: () -> Unit,
 ) {
     LaunchedEffect(Unit) { onLoad() }
-    if (isLoading) {
+    if (failed) {
+        EmptyState(
+            icon = Icons.Outlined.ErrorOutline,
+            title = "Couldn't read the DEX tables",
+            description = "The archive may be unreadable or its DEX files malformed.",
+            action = { TextButton(onClick = onLoad) { Text("Try again") } },
+        )
+        return
+    }
+    // Not-yet-loaded renders as loading too: the LaunchedEffect above kicks the
+    // load right after the first frame, so "No DEX" must wait for a real result.
+    if (isLoading || !loaded) {
         Box(Modifier.fillMaxSize(), Alignment.Center) { CircularProgressIndicator() }
         return
     }

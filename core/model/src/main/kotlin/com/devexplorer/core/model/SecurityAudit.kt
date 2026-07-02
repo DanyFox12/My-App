@@ -75,8 +75,18 @@ fun securityAudit(summary: ApkSummary): List<SecurityFinding> {
     }
 
     if (application != null) {
+        // Before API 31 made android:exported mandatory, a component with an
+        // <intent-filter> and no explicit attribute was exported by default —
+        // historically the most common unguarded-export vulnerability.
+        val implicitExport = (summary.targetSdk ?: 0) < EXPLICIT_EXPORT_SDK
+        fun XmlNode.isExported(): Boolean = when (attr("android:exported")) {
+            "true" -> true
+            "false" -> false
+            else -> implicitExport && children.any { it.name == "intent-filter" }
+        }
+
         fun exportedUnguarded(kinds: Set<String>): List<String> = application.children
-            .filter { it.name in kinds && it.flag("android:exported") && it.attr("android:permission") == null }
+            .filter { it.name in kinds && it.isExported() && it.attr("android:permission") == null }
             .mapNotNull { it.attr("android:name") }
 
         val components = exportedUnguarded(setOf("activity", "activity-alias", "service", "receiver"))
@@ -110,6 +120,9 @@ fun securityAudit(summary: ApkSummary): List<SecurityFinding> {
         compareByDescending<SecurityFinding> { it.severity.ordinal }.thenBy { it.check.ordinal },
     )
 }
+
+/** From this target SDK the platform requires android:exported to be explicit. */
+private const val EXPLICIT_EXPORT_SDK = 31
 
 /** Below this target SDK the app opts out of runtime-permission-era protections. */
 private const val LEGACY_TARGET_SDK = 23

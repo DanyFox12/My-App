@@ -217,6 +217,8 @@ private fun ApkTabs(
             3 -> DexPackagesTab(
                 root = state.dexPackages,
                 isLoading = state.isDexPackagesLoading,
+                loaded = state.dexPackagesLoaded,
+                failed = state.dexPackagesFailed,
                 onLoad = onLoadDexPackages,
             )
             4 -> NativeLibsTab(summary.nativeLibs)

@@ -3,8 +3,6 @@ package com.devexplorer.core.usecase
 import com.devexplorer.core.capability.AnalysisHistoryRepository
 import com.devexplorer.core.model.AnalysisSnapshot
 import com.devexplorer.core.model.ApkSummary
-import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
@@ -12,9 +10,6 @@ import org.junit.Test
 
 private class FakeAnalysisHistoryRepository : AnalysisHistoryRepository {
     val recorded = mutableListOf<AnalysisSnapshot>()
-    private val flow = MutableStateFlow<List<AnalysisSnapshot>>(emptyList())
-
-    override fun observe(): Flow<List<AnalysisSnapshot>> = flow
 
     override suspend fun latestFor(packageName: String): AnalysisSnapshot? =
         recorded.filter { it.packageName == packageName }.maxByOrNull { it.analyzedAt }
@@ -25,7 +20,6 @@ private class FakeAnalysisHistoryRepository : AnalysisHistoryRepository {
 
     override suspend fun record(snapshot: AnalysisSnapshot) {
         recorded += snapshot
-        flow.value = recorded.sortedByDescending { it.analyzedAt }
     }
 }
 

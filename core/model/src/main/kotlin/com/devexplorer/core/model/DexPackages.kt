@@ -92,14 +92,21 @@ object DexPackages {
             descriptorToPackage(descriptor)
         }
 
+        // Count into per-file maps first: a DEX whose header validates but whose
+        // tables run out of bounds throws mid-loop, and "fail-soft per file"
+        // means none of its partial counts may leak into the shared totals.
+        val fileClasses = HashMap<String, Int>()
+        val fileMethods = HashMap<String, Int>()
         for (i in 0 until classDefsSize) {
             val pkg = typePackage(u32(bytes, classDefsOff + i * CLASS_DEF_BYTES)) ?: continue
-            classes[pkg] = (classes[pkg] ?: 0) + 1
+            fileClasses[pkg] = (fileClasses[pkg] ?: 0) + 1
         }
         for (i in 0 until methodIdsSize) {
             val pkg = typePackage(u16(bytes, methodIdsOff + i * METHOD_ID_BYTES)) ?: continue
-            methods[pkg] = (methods[pkg] ?: 0) + 1
+            fileMethods[pkg] = (fileMethods[pkg] ?: 0) + 1
         }
+        for ((pkg, count) in fileClasses) classes[pkg] = (classes[pkg] ?: 0) + count
+        for ((pkg, count) in fileMethods) methods[pkg] = (methods[pkg] ?: 0) + count
         return true
     }
 

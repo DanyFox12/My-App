@@ -134,8 +134,9 @@ class ExplorerViewModel(
     }
 
     private fun onOpenFile(node: FileNode) {
-        // File opening (CodeViewer / ApkViewer) arrives in later milestones.
-        // For now, tapping a file is a safe no-op.
+        // Only files with no dedicated viewer land here (category Other —
+        // archives and APKs open in the APK Viewer, text in the Code Viewer).
+        _uiState.update { it.copy(message = "No built-in viewer for \"${node.name}\"") }
     }
 
     private fun onNavigateUp() {

@@ -5,7 +5,6 @@ import androidx.room.Entity
 import androidx.room.Insert
 import androidx.room.PrimaryKey
 import androidx.room.Query
-import kotlinx.coroutines.flow.Flow
 
 /**
  * Room entity for the analysis-history journal. Permissions are persisted as a
@@ -28,9 +27,6 @@ data class AnalysisSnapshotEntity(
 
 @Dao
 interface AnalysisSnapshotDao {
-
-    @Query("SELECT * FROM analysis_history ORDER BY analyzedAt DESC LIMIT 50")
-    fun observe(): Flow<List<AnalysisSnapshotEntity>>
 
     @Query("SELECT * FROM analysis_history WHERE packageName = :packageName ORDER BY analyzedAt DESC LIMIT 1")
     suspend fun latestFor(packageName: String): AnalysisSnapshotEntity?

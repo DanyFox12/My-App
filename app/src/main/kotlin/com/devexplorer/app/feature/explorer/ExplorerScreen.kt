@@ -256,7 +256,10 @@ private fun FileList(
                 onClick = {
                     when {
                         node.isDirectory -> onEvent(ExplorerEvent.OpenFolder(node))
-                        node.category == FileCategory.Apk -> onOpenApk(node.ref)
+                        // The APK Viewer reads any ZIP container, so plain
+                        // archives (.zip/.jar/.aar) get the same treatment.
+                        node.category == FileCategory.Apk ||
+                            node.category == FileCategory.Archive -> onOpenApk(node.ref)
                         node.category == FileCategory.Text -> onOpenText(node.ref, node.name)
                         else -> onEvent(ExplorerEvent.OpenFile(node))
                     }

@@ -106,7 +106,7 @@ private fun PackagesContent(
                 value = state.query,
                 onValueChange = { onEvent(PackagesEvent.SetQuery(it)) },
                 leadingIcon = { Icon(Icons.Outlined.Search, contentDescription = null) },
-                placeholder = { Text("Search apps") },
+                placeholder = { Text(stringResource(R.string.packages_search_hint)) },
                 singleLine = true,
                 modifier = Modifier
                     .fillMaxWidth()
@@ -122,7 +122,7 @@ private fun PackagesContent(
                 FilterChip(
                     selected = state.onlyFavorites,
                     onClick = { onEvent(PackagesEvent.SetOnlyFavorites(!state.onlyFavorites)) },
-                    label = { Text("Favorites") },
+                    label = { Text(stringResource(R.string.packages_filter_favorites)) },
                     leadingIcon = {
                         Icon(
                             imageVector = if (state.onlyFavorites) Icons.Filled.Star else Icons.Outlined.StarOutline,
@@ -131,7 +131,7 @@ private fun PackagesContent(
                     },
                 )
                 Row(verticalAlignment = Alignment.CenterVertically) {
-                    Text("Show system apps", style = MaterialTheme.typography.bodyMedium)
+                    Text(stringResource(R.string.packages_show_system), style = MaterialTheme.typography.bodyMedium)
                     Switch(
                         checked = state.includeSystem,
                         onCheckedChange = { onEvent(PackagesEvent.SetIncludeSystem(it)) },
@@ -152,10 +152,12 @@ private fun PackagesContent(
                     state.isEmpty -> EmptyState(
                         icon = Icons.Outlined.Apps,
                         title = stringResource(R.string.packages_empty_title),
-                        description = if (state.query.isBlank()) {
-                            stringResource(R.string.packages_empty_desc)
-                        } else {
-                            "No apps match \"${state.query}\"."
+                        description = when {
+                            // The Favorites filter is its own way to reach an
+                            // empty list — don't show the onboarding copy then.
+                            state.onlyFavorites -> stringResource(R.string.packages_empty_favorites)
+                            state.query.isBlank() -> stringResource(R.string.packages_empty_desc)
+                            else -> stringResource(R.string.packages_empty_search, state.query)
                         },
                     )
                     else -> PackagesList(
@@ -238,7 +240,9 @@ private fun PackageRow(
         IconButton(onClick = onToggleFavorite) {
             Icon(
                 imageVector = if (isFavorite) Icons.Filled.Star else Icons.Outlined.StarOutline,
-                contentDescription = if (isFavorite) "Unpin" else "Pin",
+                contentDescription = stringResource(
+                    if (isFavorite) R.string.packages_unpin else R.string.packages_pin,
+                ),
                 tint = if (isFavorite) MaterialTheme.colorScheme.primary
                 else MaterialTheme.colorScheme.onSurfaceVariant,
             )

@@ -17,6 +17,13 @@
     <string name="packages_title">Installed packages</string>
     <string name="packages_empty_title">Installed apps</string>
     <string name="packages_empty_desc">Inspect installed packages: manifest, permissions, signatures and more. Read-only.</string>
+    <string name="packages_search_hint">Search apps</string>
+    <string name="packages_show_system">Show system apps</string>
+    <string name="packages_filter_favorites">Favorites</string>
+    <string name="packages_pin">Pin</string>
+    <string name="packages_unpin">Unpin</string>
+    <string name="packages_empty_favorites">No pinned apps yet. Tap the star on an app to pin it here.</string>
+    <string name="packages_empty_search">No apps match \"%1$s\".</string>
 
     <!-- Workspace -->
     <string name="workspace_title">Workspace</string>
@@ -25,10 +32,7 @@
 
     <!-- Settings -->
     <string name="settings_title">Settings</string>
-    <string name="settings_empty_title">Settings</string>
-    <string name="settings_empty_desc">Theme, language, and optional features will live here.</string>
     <string name="settings_theme">Appearance</string>
-    <string name="settings_theme_mode">Theme</string>
     <string name="settings_theme_system">Follow system</string>
     <string name="settings_theme_light">Light</string>
     <string name="settings_theme_dark">Dark</string>

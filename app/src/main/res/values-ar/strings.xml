@@ -17,6 +17,13 @@
     <string name="packages_title">الحزم المثبّتة</string>
     <string name="packages_empty_title">التطبيقات المثبّتة</string>
     <string name="packages_empty_desc">افحص الحزم المثبّتة: البيان، الأذونات، التواقيع وأكثر. للقراءة فقط.</string>
+    <string name="packages_search_hint">ابحث في التطبيقات</string>
+    <string name="packages_show_system">إظهار تطبيقات النظام</string>
+    <string name="packages_filter_favorites">المفضّلة</string>
+    <string name="packages_pin">تثبيت</string>
+    <string name="packages_unpin">إلغاء التثبيت</string>
+    <string name="packages_empty_favorites">لا توجد تطبيقات مثبّتة بعد. اضغط على النجمة بجانب تطبيق لتثبيته هنا.</string>
+    <string name="packages_empty_search">لا توجد تطبيقات تطابق \"%1$s\".</string>
 
     <!-- Workspace -->
     <string name="workspace_title">مساحة العمل</string>
@@ -25,10 +32,7 @@
 
     <!-- Settings -->
     <string name="settings_title">الإعدادات</string>
-    <string name="settings_empty_title">الإعدادات</string>
-    <string name="settings_empty_desc">المظهر واللغة والميزات الاختيارية ستكون هنا.</string>
     <string name="settings_theme">المظهر</string>
-    <string name="settings_theme_mode">السمة</string>
     <string name="settings_theme_system">حسب النظام</string>
     <string name="settings_theme_light">فاتح</string>
     <string name="settings_theme_dark">داكن</string>
