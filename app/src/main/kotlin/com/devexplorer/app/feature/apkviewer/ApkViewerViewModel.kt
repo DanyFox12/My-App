@@ -8,11 +8,14 @@ import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
 import com.devexplorer.core.model.ApkSummary
 import com.devexplorer.core.model.DexPackageNode
+import com.devexplorer.core.model.SnapshotDelta
 import com.devexplorer.core.model.StorageRef
 import com.devexplorer.core.usecase.AnalyzeApkUseCase
 import com.devexplorer.core.usecase.ExtractEntryUseCase
 import com.devexplorer.core.usecase.ReadDexPackagesUseCase
+import com.devexplorer.core.usecase.TrackAnalysisUseCase
 import com.devexplorer.data.apk.ApkFileRepository
+import com.devexplorer.data.db.DbModule
 import com.devexplorer.data.packages.PackageManagerRepository
 import com.devexplorer.data.storage.SafStorageRepository
 import com.devexplorer.data.workspace.WorkspaceModule
@@ -33,6 +36,8 @@ data class ApkViewerUiState(
     val isDexPackagesLoading: Boolean = false,
     /** True once a DEX-tree load finished (even if it found no parseable DEX). */
     val dexPackagesLoaded: Boolean = false,
+    /** What changed vs. the previously recorded version of this package, if known. */
+    val updateDelta: SnapshotDelta? = null,
 )
 
 /**
@@ -45,6 +50,7 @@ class ApkViewerViewModel(
     private val analyzeApk: AnalyzeApkUseCase,
     private val extractEntry: ExtractEntryUseCase,
     private val readDexPackages: ReadDexPackagesUseCase,
+    private val trackAnalysis: TrackAnalysisUseCase,
     private val sourceRef: StorageRef,
 ) : ViewModel() {
 
@@ -90,6 +96,9 @@ class ApkViewerViewModel(
             analyzeApk(sourceRef)
                 .onSuccess { summary ->
                     _uiState.update { it.copy(isLoading = false, summary = summary) }
+                    // Journal the analysis and surface "what changed since vX".
+                    val delta = trackAnalysis(summary, System.currentTimeMillis()).getOrNull()
+                    if (delta != null) _uiState.update { it.copy(updateDelta = delta) }
                 }
                 .onFailure {
                     _uiState.update {
@@ -115,6 +124,7 @@ class ApkViewerViewModel(
                         analyzeApk = AnalyzeApkUseCase(storage, packages, apk),
                         extractEntry = ExtractEntryUseCase(storage, packages, workspace, writeToken),
                         readDexPackages = ReadDexPackagesUseCase(storage, packages, apk),
+                        trackAnalysis = TrackAnalysisUseCase(DbModule.analysisHistoryRepository(appContext)),
                         sourceRef = sourceRef,
                     )
                 }

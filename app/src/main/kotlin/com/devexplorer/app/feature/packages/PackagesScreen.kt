@@ -12,13 +12,16 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Star
 import androidx.compose.material.icons.outlined.Apps
 import androidx.compose.material.icons.outlined.Difference
 import androidx.compose.material.icons.outlined.ErrorOutline
 import androidx.compose.material.icons.outlined.Search
 import androidx.compose.material.icons.outlined.Shield
+import androidx.compose.material.icons.outlined.StarOutline
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.FilterChip
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -116,11 +119,25 @@ private fun PackagesContent(
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.SpaceBetween,
             ) {
-                Text("Show system apps", style = MaterialTheme.typography.bodyMedium)
-                Switch(
-                    checked = state.includeSystem,
-                    onCheckedChange = { onEvent(PackagesEvent.SetIncludeSystem(it)) },
+                FilterChip(
+                    selected = state.onlyFavorites,
+                    onClick = { onEvent(PackagesEvent.SetOnlyFavorites(!state.onlyFavorites)) },
+                    label = { Text("Favorites") },
+                    leadingIcon = {
+                        Icon(
+                            imageVector = if (state.onlyFavorites) Icons.Filled.Star else Icons.Outlined.StarOutline,
+                            contentDescription = null,
+                        )
+                    },
                 )
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text("Show system apps", style = MaterialTheme.typography.bodyMedium)
+                    Switch(
+                        checked = state.includeSystem,
+                        onCheckedChange = { onEvent(PackagesEvent.SetIncludeSystem(it)) },
+                        modifier = Modifier.padding(start = 8.dp),
+                    )
+                }
             }
 
             Box(modifier = Modifier.fillMaxSize()) {
@@ -141,7 +158,12 @@ private fun PackagesContent(
                             "No apps match \"${state.query}\"."
                         },
                     )
-                    else -> PackagesList(packages = state.visible, onOpenPackage = onOpenPackage)
+                    else -> PackagesList(
+                        packages = state.visible,
+                        favorites = state.favorites,
+                        onOpenPackage = onOpenPackage,
+                        onToggleFavorite = { onEvent(PackagesEvent.ToggleFavorite(it)) },
+                    )
                 }
             }
         }
@@ -151,11 +173,18 @@ private fun PackagesContent(
 @Composable
 private fun PackagesList(
     packages: List<InstalledPackage>,
+    favorites: Set<String>,
     onOpenPackage: (String) -> Unit,
+    onToggleFavorite: (String) -> Unit,
 ) {
     LazyColumn(modifier = Modifier.fillMaxSize()) {
         items(items = packages, key = { it.packageName }) { pkg ->
-            PackageRow(pkg = pkg, onClick = { onOpenPackage(pkg.packageName) })
+            PackageRow(
+                pkg = pkg,
+                isFavorite = pkg.packageName in favorites,
+                onClick = { onOpenPackage(pkg.packageName) },
+                onToggleFavorite = { onToggleFavorite(pkg.packageName) },
+            )
             HorizontalDivider()
         }
     }
@@ -164,7 +193,9 @@ private fun PackagesList(
 @Composable
 private fun PackageRow(
     pkg: InstalledPackage,
+    isFavorite: Boolean,
     onClick: () -> Unit,
+    onToggleFavorite: () -> Unit,
 ) {
     Row(
         modifier = Modifier
@@ -202,6 +233,14 @@ private fun PackageRow(
                 text = "v${pkg.versionName ?: "?"} (${pkg.versionCode})",
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
+        IconButton(onClick = onToggleFavorite) {
+            Icon(
+                imageVector = if (isFavorite) Icons.Filled.Star else Icons.Outlined.StarOutline,
+                contentDescription = if (isFavorite) "Unpin" else "Pin",
+                tint = if (isFavorite) MaterialTheme.colorScheme.primary
+                else MaterialTheme.colorScheme.onSurfaceVariant,
             )
         }
     }

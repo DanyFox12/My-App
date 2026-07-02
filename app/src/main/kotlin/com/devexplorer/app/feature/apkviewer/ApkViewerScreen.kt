@@ -77,6 +77,7 @@ import com.devexplorer.core.model.CertificateInfo
 import com.devexplorer.core.model.CompressionMethod
 import com.devexplorer.core.model.DexStats
 import com.devexplorer.core.model.SigningInfo
+import com.devexplorer.core.model.SnapshotDelta
 import com.devexplorer.core.model.StorageRef
 import com.devexplorer.core.model.XmlNode
 import java.text.SimpleDateFormat
@@ -210,7 +211,7 @@ private fun ApkTabs(
             }
         }
         when (tab) {
-            0 -> OverviewTab(summary)
+            0 -> OverviewTab(summary, state.updateDelta)
             1 -> SecurityTab(summary)
             2 -> XrayTab(summary.entries)
             3 -> DexPackagesTab(
@@ -558,7 +559,7 @@ private fun formatDate(millis: Long): String =
     SimpleDateFormat("yyyy-MM-dd", Locale.US).format(Date(millis))
 
 @Composable
-private fun OverviewTab(summary: ApkSummary) {
+private fun OverviewTab(summary: ApkSummary, updateDelta: SnapshotDelta?) {
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -566,6 +567,7 @@ private fun OverviewTab(summary: ApkSummary) {
             .padding(16.dp),
         verticalArrangement = Arrangement.spacedBy(12.dp),
     ) {
+        if (updateDelta != null) UpdateDeltaCard(updateDelta)
         if (!summary.isValidPackage) {
             Text(
                 text = "This archive isn't a recognized Android package, but its ZIP contents are shown under Contents.",
@@ -623,6 +625,52 @@ private fun OverviewTab(summary: ApkSummary) {
         )
     }
 }
+
+/**
+ * "What changed since the version we analyzed last time" — powered by the
+ * Room-backed analysis journal; only shown when a previous, different
+ * versionCode of the same package was recorded on this device.
+ */
+@Composable
+private fun UpdateDeltaCard(delta: SnapshotDelta) {
+    val previous = delta.previous
+    ElevatedCard(modifier = Modifier.fillMaxWidth()) {
+        Column(modifier = Modifier.padding(vertical = 8.dp)) {
+            Text(
+                text = "Changed since v${previous.versionName ?: previous.versionCode}",
+                style = MaterialTheme.typography.titleSmall,
+                color = MaterialTheme.colorScheme.primary,
+                modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp),
+            )
+            if (!delta.hasChanges) {
+                Text(
+                    text = "New version code, but nothing structural moved.",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp),
+                )
+            } else {
+                if (delta.sizeDeltaBytes != 0L) {
+                    InfoRow("Size", signedBytes(delta.sizeDeltaBytes))
+                }
+                if (delta.methodRefsDelta != 0) {
+                    InfoRow("Method refs", signedCount(delta.methodRefsDelta))
+                }
+                if (delta.entryDelta != 0) {
+                    InfoRow("Entries", signedCount(delta.entryDelta))
+                }
+                delta.addedPermissions.forEach { InfoRow("+ permission", it.substringAfterLast('.')) }
+                delta.removedPermissions.forEach { InfoRow("\u2212 permission", it.substringAfterLast('.')) }
+            }
+        }
+    }
+}
+
+private fun signedBytes(delta: Long): String =
+    (if (delta > 0) "+" else "\u2212") + formatBytes(kotlin.math.abs(delta))
+
+private fun signedCount(delta: Int): String =
+    (if (delta > 0) "+" else "\u2212") + kotlin.math.abs(delta)
 
 @Composable
 internal fun InfoRow(label: String, value: String) {
