@@ -11,14 +11,25 @@ unless you turn it on.
 ## What it does
 
 - **Explorer** — browse files via the Storage Access Framework (read-only),
-  with a recent-folders history.
-- **APK Viewer** — open any APK (or installed app) and inspect it read-only:
-  overview, permissions, **signing certificates & fingerprints**, resource
-  breakdown, **DEX method/class counts** (with a 64K-limit warning), and the raw
-  ZIP contents — from which you can **extract any entry into the Workspace**.
-  Share a plain-text report of the analysis straight from the toolbar.
-- **Packages** — list installed apps via `PackageManager`; tap one to analyze it
-  in the same viewer.
+  with a recent-folders history. APKs — and plain ZIP/JAR/AAR archives — open
+  in the APK Viewer; text opens in the Code Viewer.
+- **APK Viewer** — open any APK, archive, or installed app and inspect it
+  read-only across eleven tabs: overview (with a **"changed since vX"** card
+  when an app updated since you last looked), a **security scorecard**
+  (debuggable/backup/cleartext flags, exported — including *implicitly*
+  exported — components, dangerous permissions, outdated targetSdk), an
+  **X-ray treemap** of what the bytes are, a per-package **DEX class/method
+  tree** (64K-budget view), **native libraries** with ELF machine/bitness and
+  16 KB page-size readiness, the **decoded binary AndroidManifest.xml** (a
+  from-scratch AXML parser — no `PackageManager` involved), permissions,
+  **signing certificates & fingerprints**, resource breakdown, the
+  `resources.arsc` **string pool** (searchable), and the raw ZIP contents —
+  from which you can **extract any entry into the Workspace**. Share a
+  plain-text report of the analysis straight from the toolbar.
+- **Packages** — list installed apps via `PackageManager`; tap one to analyze
+  it in the same viewer, **pin favorites** to the top, and filter to them.
+- **Permission search** — the reverse index: pick a permission and see every
+  installed app that requests it.
 - **Compare APKs** — pick two installed apps and diff them side-by-side:
   version/SDK changes, size and composition deltas, DEX method growth, added/
   removed permissions, and whether they share a signing certificate. Shareable as
@@ -67,7 +78,9 @@ Coroutines/Flow · Room · WorkManager · SAF · single-Activity.
   newer-API feature (dynamic color, `longVersionCode`, per-app locales…) is
   gated at runtime.
 - **Performance-aware**: a `DevicePerformanceTier`/`PerformanceBudget` detected
-  at startup scales motion, blur, cache sizes, and list prefetch to the device.
+  at startup scales navigation motion to the device (low-end phones skip the
+  crossfade entirely) and reserves blur/cache/prefetch knobs for the screens
+  that will need them.
 
 ## Building
 
@@ -136,3 +149,7 @@ root build file.
 | 8 | Resources (res/, arsc, assets) | [08](docs/internals/08-resources.md) |
 | 9 | Room history + WorkManager | [09](docs/internals/09-persistence-and-background.md) |
 | 10 | Localization, theming, motion | [10](docs/internals/10-localization-and-theming.md) |
+| 11 | DEX insight & APK comparison | [11](docs/internals/11-dex-insight-and-apk-diff.md) |
+| 12 | Extract entries & edit in the sandbox | [12](docs/internals/12-extract-and-edit.md) |
+| 13 | X-ray treemap, AXML decoder, permission search | [13](docs/internals/13-xray-axml-and-permission-search.md) |
+| 14 | Deep-analysis tabs & the analysis journal | [14](docs/internals/14-analysis-tabs-and-journal.md) |

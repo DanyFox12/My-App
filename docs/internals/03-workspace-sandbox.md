@@ -114,8 +114,10 @@ in state, surfaced via a `Snackbar` in a `LaunchedEffect` and then **consumed**
 Copy a file in the Explorer, switch to the Workspace tab — it's there. Because
 we don't have Room until milestone 9, the Workspace re-lists itself on
 `Lifecycle.Event.ON_START` (`LifecycleEventEffect`), i.e. every time the tab
-becomes visible. It's a simple, correct stopgap; milestone 9 replaces it with a
-reactive Room `Flow` that pushes updates automatically.
+becomes visible. It's simple and correct, and the Workspace still uses it:
+milestone 9 brings the reactive Room `Flow` pattern (recents, favorites), but
+the Workspace lists a plain directory — there is no table to observe, so the
+ON_START re-list remains the honest implementation.
 
 ---
 

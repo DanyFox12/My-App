@@ -56,8 +56,9 @@ NavHost(enterTransition = { fadeIn(fade) }, exitTransition = { fadeOut(fade) })
 
 On a Low-tier device `crossfadeMillis` is `0`, so screens **snap** instead of
 fading — no animation cost where frames are precious. On High-tier it's a smooth
-250 ms. The same budget already gates blur and cache sizes elsewhere; motion just
-joins the policy.
+250 ms. `crossfadeMillis` is the budget knob the app consumes today; the
+blur/cache/prefetch knobs are computed alongside it, ready for the screens that
+will need them.
 
 ## 4. Network stays off unless you ask
 
