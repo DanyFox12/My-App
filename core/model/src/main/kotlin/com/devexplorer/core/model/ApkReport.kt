@@ -62,6 +62,34 @@ fun buildApkReport(summary: ApkSummary): String = buildString {
         appendLine()
     }
 
+    val nativeLibs = summary.nativeLibs
+    if (nativeLibs != null && nativeLibs.files.isNotEmpty()) {
+        appendLine("Native libraries")
+        for (abi in nativeLibs.summaries) {
+            append("  ").append(abi.abi).append(": ")
+                .append(abi.fileCount.toString()).append(" files, ")
+                .append(abi.totalBytes.toString()).append(" bytes")
+            when (abi.supports16KbPages) {
+                true -> append("  [16 KB ready]")
+                false -> append("  [NOT 16 KB ready]")
+                null -> Unit
+            }
+            append('\n')
+        }
+        appendLine()
+    }
+
+    val security = securityAudit(summary)
+    if (security.isNotEmpty()) {
+        appendLine("Security audit (${security.size})")
+        for (finding in security) {
+            append("  [").append(finding.severity.name.lowercase()).append("] ")
+                .append(finding.check.reportLabel()).append('\n')
+            for (item in finding.items) append("    - ").append(item).append('\n')
+        }
+        appendLine()
+    }
+
     appendLine("Permissions (${summary.permissions.size})")
     if (summary.permissions.isEmpty()) {
         appendLine("  (none)")
@@ -85,3 +113,16 @@ fun buildApkReport(summary: ApkSummary): String = buildString {
         }
     }
 }.trimEnd('\n') + "\n"
+
+/** Compact English labels for the plain-text report (the UI localizes its own). */
+private fun SecurityCheck.reportLabel(): String = when (this) {
+    SecurityCheck.Debuggable -> "debuggable build"
+    SecurityCheck.TestOnly -> "test-only build"
+    SecurityCheck.AllowBackup -> "backup allowed"
+    SecurityCheck.CleartextTraffic -> "cleartext traffic allowed"
+    SecurityCheck.ExportedComponents -> "exported components without a permission"
+    SecurityCheck.ExportedProviders -> "exported content providers"
+    SecurityCheck.DangerousPermissions -> "sensitive permissions requested"
+    SecurityCheck.OutdatedTargetSdk -> "outdated target SDK"
+    SecurityCheck.NoManifest -> "no manifest to audit"
+}

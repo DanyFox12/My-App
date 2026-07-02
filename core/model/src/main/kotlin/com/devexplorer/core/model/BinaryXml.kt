@@ -100,7 +100,11 @@ object BinaryXml {
 
     // --- string pool ---
 
-    internal fun parseStringPool(bytes: ByteArray, chunkStart: Int): List<String> {
+    internal fun parseStringPool(
+        bytes: ByteArray,
+        chunkStart: Int,
+        limit: Int = Int.MAX_VALUE,
+    ): List<String> {
         val stringCount = u32(bytes, chunkStart + 8).toInt()
         val flags = u32(bytes, chunkStart + 16).toInt()
         val stringsStart = u32(bytes, chunkStart + 20).toInt()
@@ -108,7 +112,7 @@ object BinaryXml {
         val offsetsBase = chunkStart + 28
         val dataBase = chunkStart + stringsStart
 
-        return (0 until stringCount).map { i ->
+        return (0 until minOf(stringCount, limit)).map { i ->
             val strOffset = u32(bytes, offsetsBase + i * 4).toInt()
             val p = dataBase + strOffset
             if (utf8) readUtf8(bytes, p) else readUtf16(bytes, p)

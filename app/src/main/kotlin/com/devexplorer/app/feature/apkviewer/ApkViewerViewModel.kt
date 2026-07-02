@@ -7,9 +7,11 @@ import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
 import com.devexplorer.core.model.ApkSummary
+import com.devexplorer.core.model.DexPackageNode
 import com.devexplorer.core.model.StorageRef
 import com.devexplorer.core.usecase.AnalyzeApkUseCase
 import com.devexplorer.core.usecase.ExtractEntryUseCase
+import com.devexplorer.core.usecase.ReadDexPackagesUseCase
 import com.devexplorer.data.apk.ApkFileRepository
 import com.devexplorer.data.packages.PackageManagerRepository
 import com.devexplorer.data.storage.SafStorageRepository
@@ -26,6 +28,11 @@ data class ApkViewerUiState(
     val errorMessage: String? = null,
     /** Transient one-shot message (e.g. the result of an extraction). */
     val message: String? = null,
+    /** Per-package DEX tree — loaded on demand the first time the tab opens. */
+    val dexPackages: DexPackageNode? = null,
+    val isDexPackagesLoading: Boolean = false,
+    /** True once a DEX-tree load finished (even if it found no parseable DEX). */
+    val dexPackagesLoaded: Boolean = false,
 )
 
 /**
@@ -37,6 +44,7 @@ data class ApkViewerUiState(
 class ApkViewerViewModel(
     private val analyzeApk: AnalyzeApkUseCase,
     private val extractEntry: ExtractEntryUseCase,
+    private val readDexPackages: ReadDexPackagesUseCase,
     private val sourceRef: StorageRef,
 ) : ViewModel() {
 
@@ -57,6 +65,22 @@ class ApkViewerViewModel(
             extractEntry(sourceRef, entryName)
                 .onSuccess { item -> _uiState.update { it.copy(message = "Extracted \"${item.name}\" to Workspace") } }
                 .onFailure { _uiState.update { it.copy(message = "Couldn't extract that entry") } }
+        }
+    }
+
+    /**
+     * Walk the whole DEX for the per-package tree. Deliberately lazy — it reads
+     * every classes*.dex byte, so it only runs when the DEX tab first opens.
+     */
+    fun loadDexPackages() {
+        val state = _uiState.value
+        if (state.isDexPackagesLoading || state.dexPackagesLoaded) return
+        viewModelScope.launch {
+            _uiState.update { it.copy(isDexPackagesLoading = true) }
+            val tree = readDexPackages(sourceRef).getOrNull()
+            _uiState.update {
+                it.copy(dexPackages = tree, isDexPackagesLoading = false, dexPackagesLoaded = true)
+            }
         }
     }
 
@@ -90,6 +114,7 @@ class ApkViewerViewModel(
                     ApkViewerViewModel(
                         analyzeApk = AnalyzeApkUseCase(storage, packages, apk),
                         extractEntry = ExtractEntryUseCase(storage, packages, workspace, writeToken),
+                        readDexPackages = ReadDexPackagesUseCase(storage, packages, apk),
                         sourceRef = sourceRef,
                     )
                 }

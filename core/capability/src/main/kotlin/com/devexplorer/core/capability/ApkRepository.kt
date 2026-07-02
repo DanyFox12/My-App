@@ -1,6 +1,7 @@
 package com.devexplorer.core.capability
 
 import com.devexplorer.core.model.ApkSummary
+import com.devexplorer.core.model.DexPackageNode
 import java.io.InputStream
 
 /**
@@ -20,4 +21,12 @@ interface ApkRepository {
      * an internal detail and is deleted before returning.
      */
     suspend fun analyze(input: InputStream): ApkSummary
+
+    /**
+     * Walk every `classes*.dex` in the archive and build the per-package
+     * class/method-reference tree. Separate from [analyze] because it reads
+     * whole DEX files (not just their headers) — callers trigger it on demand.
+     * Returns null when the archive holds no parseable DEX.
+     */
+    suspend fun readDexPackages(input: InputStream): DexPackageNode?
 }

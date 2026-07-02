@@ -32,6 +32,10 @@ data class ApkSummary(
     val manifest: XmlNode? = null,
     /** Parsed DEX header stats (method/class/field counts), if the DEX files were read. */
     val dexStats: DexStats? = null,
+    /** Native libraries under lib/ with per-ABI ELF facts, if any were found. */
+    val nativeLibs: NativeLibs? = null,
+    /** The resources.arsc global string pool (display-capped), if it decoded. */
+    val arscStrings: ArscStrings? = null,
 ) {
     /** True when the platform parser recognized this as an installable package. */
     val isValidPackage: Boolean get() = packageName != null

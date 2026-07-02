@@ -9,6 +9,7 @@ import com.devexplorer.core.model.StorageRef
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
+import com.devexplorer.core.model.DexPackageNode
 import java.io.InputStream
 import org.junit.Test
 
@@ -18,6 +19,8 @@ private class FakeApkRepository(private val byMarker: Map<Int, ApkSummary>) : Ap
         val marker = input.read()
         return byMarker.getValue(marker)
     }
+
+    override suspend fun readDexPackages(input: InputStream): DexPackageNode? = null
 }
 
 private class UnusedPackagesRepository : PackagesRepository {

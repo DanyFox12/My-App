@@ -8,10 +8,16 @@ import com.devexplorer.core.capability.ApkRepository
 import com.devexplorer.core.capability.ReadCapability
 import com.devexplorer.core.model.ApkSummary
 import com.devexplorer.core.model.ArchiveEntry
+import com.devexplorer.core.model.Arsc
+import com.devexplorer.core.model.ArscStrings
 import com.devexplorer.core.model.BinaryXml
 import com.devexplorer.core.model.CompressionMethod
 import com.devexplorer.core.model.Dex
+import com.devexplorer.core.model.DexPackageNode
+import com.devexplorer.core.model.DexPackages
 import com.devexplorer.core.model.DexStats
+import com.devexplorer.core.model.Elf
+import com.devexplorer.core.model.NativeLibs
 import com.devexplorer.core.model.XmlNode
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
@@ -53,9 +59,22 @@ class ApkFileRepository(
             val packageInfo = readPackageInfo(temp)
             val manifest = readManifest(temp)
             val dexStats = readDexStats(temp, entries)
-            buildSummary(temp, entries, packageInfo, manifest, dexStats)
+            val nativeLibs = readNativeLibs(temp, entries)
+            val arscStrings = readArscStrings(temp)
+            buildSummary(temp, entries, packageInfo, manifest, dexStats, nativeLibs, arscStrings)
         } finally {
             temp.delete()
+        }
+    }
+
+    override suspend fun readDexPackages(input: InputStream): DexPackageNode? = withContext(io) {
+        java.util.zip.ZipInputStream(input).use { zip ->
+            // One DEX's bytes are alive at a time; the sequence is consumed
+            // inside this scope, before the stream closes.
+            val dexBytes = generateSequence { zip.nextEntry }
+                .filter { !it.isDirectory && DEX_REGEX.matches(it.name) }
+                .map { zip.readBytes() }
+            DexPackages.parse(dexBytes)
         }
     }
 
@@ -105,6 +124,34 @@ class ApkFileRepository(
         return if (files.isEmpty()) null else DexStats(files)
     }
 
+    /**
+     * Read each native library's leading bytes and parse its ELF header/program
+     * headers. Header-sized reads only ([Elf.HEADER_READ_BYTES] per lib) — we
+     * never inflate whole `.so` files just to classify them.
+     */
+    private fun readNativeLibs(file: File, entries: List<ArchiveEntry>): NativeLibs? {
+        val libEntries = entries.filter { !it.isDirectory && NativeLibs.isNativeLibPath(it.name) }
+        if (libEntries.isEmpty()) return null
+        val triples = ZipFile(file).use { zip ->
+            libEntries.map { archiveEntry ->
+                val header = zip.getEntry(archiveEntry.name)?.let { zipEntry ->
+                    zip.getInputStream(zipEntry).use { it.readAtMost(Elf.HEADER_READ_BYTES) }
+                } ?: ByteArray(0)
+                Triple(archiveEntry.name, archiveEntry.sizeBytes, header)
+            }
+        }
+        return NativeLibs.build(triples)
+    }
+
+    /** Decode the resources.arsc global string pool (fail-soft, display-capped). */
+    private fun readArscStrings(file: File): ArscStrings? = runCatching {
+        ZipFile(file).use { zip ->
+            val entry = zip.getEntry("resources.arsc") ?: return null
+            val bytes = zip.getInputStream(entry).use { it.readBytes() }
+            Arsc.readGlobalStrings(bytes)
+        }
+    }.getOrNull()
+
     /** Read up to [n] bytes, tolerating short reads from the deflate stream. */
     private fun InputStream.readAtMost(n: Int): ByteArray {
         val buffer = ByteArray(n)
@@ -140,6 +187,8 @@ class ApkFileRepository(
         info: PackageInfo?,
         manifest: XmlNode?,
         dexStats: DexStats?,
+        nativeLibs: NativeLibs?,
+        arscStrings: ArscStrings?,
     ): ApkSummary {
         val appInfo = info?.applicationInfo
         val label = runCatching { appInfo?.loadLabel(appContext.packageManager)?.toString() }
@@ -173,6 +222,8 @@ class ApkFileRepository(
             totalCompressedBytes = entries.sumOf { it.compressedSizeBytes },
             manifest = manifest,
             dexStats = dexStats,
+            nativeLibs = nativeLibs,
+            arscStrings = arscStrings,
         )
     }
 

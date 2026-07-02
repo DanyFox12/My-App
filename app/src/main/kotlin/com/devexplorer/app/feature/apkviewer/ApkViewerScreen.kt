@@ -98,6 +98,7 @@ fun ApkViewerScreen(
         onRetry = viewModel::retry,
         onExtract = viewModel::extract,
         onConsumeMessage = viewModel::consumeMessage,
+        onLoadDexPackages = viewModel::loadDexPackages,
     )
 }
 
@@ -123,6 +124,7 @@ private fun ApkViewerContent(
     onRetry: () -> Unit,
     onExtract: (String) -> Unit,
     onConsumeMessage: () -> Unit,
+    onLoadDexPackages: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val title = state.summary?.appLabel ?: state.summary?.packageName ?: "APK"
@@ -173,16 +175,29 @@ private fun ApkViewerContent(
                     description = state.errorMessage,
                     action = { TextButton(onClick = onRetry) { Text("Try again") } },
                 )
-                state.summary != null -> ApkTabs(state.summary, onExtract = onExtract)
+                state.summary != null -> ApkTabs(
+                    summary = state.summary,
+                    state = state,
+                    onExtract = onExtract,
+                    onLoadDexPackages = onLoadDexPackages,
+                )
             }
         }
     }
 }
 
 @Composable
-private fun ApkTabs(summary: ApkSummary, onExtract: (String) -> Unit) {
+private fun ApkTabs(
+    summary: ApkSummary,
+    state: ApkViewerUiState,
+    onExtract: (String) -> Unit,
+    onLoadDexPackages: () -> Unit,
+) {
     var tab by rememberSaveable { mutableIntStateOf(0) }
-    val titles = listOf("Overview", "X-ray", "Manifest", "Permissions", "Signature", "Resources", "Contents")
+    val titles = listOf(
+        "Overview", "Security", "X-ray", "DEX", "Native", "Manifest",
+        "Permissions", "Signature", "Resources", "Strings", "Contents",
+    )
 
     Column(modifier = Modifier.fillMaxSize()) {
         ScrollableTabRow(selectedTabIndex = tab, edgePadding = 0.dp) {
@@ -196,11 +211,19 @@ private fun ApkTabs(summary: ApkSummary, onExtract: (String) -> Unit) {
         }
         when (tab) {
             0 -> OverviewTab(summary)
-            1 -> XrayTab(summary.entries)
-            2 -> ManifestTab(summary.manifest)
-            3 -> PermissionsTab(summary.permissions)
-            4 -> SignatureTab(summary.signingInfo)
-            5 -> ResourcesTab(summary.entries)
+            1 -> SecurityTab(summary)
+            2 -> XrayTab(summary.entries)
+            3 -> DexPackagesTab(
+                root = state.dexPackages,
+                isLoading = state.isDexPackagesLoading,
+                onLoad = onLoadDexPackages,
+            )
+            4 -> NativeLibsTab(summary.nativeLibs)
+            5 -> ManifestTab(summary.manifest)
+            6 -> PermissionsTab(summary.permissions)
+            7 -> SignatureTab(summary.signingInfo)
+            8 -> ResourcesTab(summary.entries)
+            9 -> ArscStringsTab(summary.arscStrings)
             else -> ContentsTab(summary.entries, onExtract = onExtract)
         }
     }
@@ -414,7 +437,7 @@ private fun ResourcesTab(entries: List<ArchiveEntry>) {
 }
 
 @Composable
-private fun SectionTitle(text: String) {
+internal fun SectionTitle(text: String) {
     Text(
         text = text,
         style = MaterialTheme.typography.titleSmall,
@@ -503,7 +526,7 @@ private fun Fingerprint(label: String, value: String) {
 
 /** Returns a (label, value) -> Unit that copies to the clipboard and toasts. */
 @Composable
-private fun rememberCopier(): (String, String) -> Unit {
+internal fun rememberCopier(): (String, String) -> Unit {
     val clipboard = LocalClipboardManager.current
     val context = LocalContext.current
     return remember(clipboard, context) {
@@ -602,7 +625,7 @@ private fun OverviewTab(summary: ApkSummary) {
 }
 
 @Composable
-private fun InfoRow(label: String, value: String) {
+internal fun InfoRow(label: String, value: String) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
